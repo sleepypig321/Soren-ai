@@ -103,3 +103,8 @@ input[type=number]{background:#0d1731ec;border-color:#7993df7f;box-shadow:inset 
 .mark{display:grid;place-items:center;width:58px;height:58px;flex:0 0 58px;padding:5px;border-radius:17px}
 .mark img{display:block;width:46px;height:46px;object-fit:contain;filter:drop-shadow(0 0 7px #78b5ff8a)}
 @media(max-width:700px){.mark{width:48px;height:48px;flex-basis:48px;padding:3px}.mark img{width:40px;height:40px}}
+
+/* Approved source artwork: do not redraw or recolor the DNA mark. */
+.mark{width:74px;height:74px;flex:0 0 74px;padding:0;overflow:hidden}
+.mark img{width:74px;height:74px;max-width:none;object-fit:contain;filter:drop-shadow(0 0 6px #6f95ff55)}
+@media(max-width:700px){.mark{width:60px;height:60px;flex-basis:60px;padding:0}.mark img{width:60px;height:60px}}
