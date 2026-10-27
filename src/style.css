@@ -98,3 +98,8 @@ input[type=number]{background:#0d1731ec;border-color:#7993df7f;box-shadow:inset 
   @keyframes mark-pulse{50%{box-shadow:0 0 25px #8498ffad,inset 0 0 20px #ac83ff66,0 0 62px #5677ff55}}
 }
 @media(max-width:700px){.sidebar{box-shadow:0 10px 50px #03081980}.metric:hover{transform:none}main::before{width:100%;left:0}}
+
+/* Shared DNA brand icon */
+.mark{display:grid;place-items:center;width:58px;height:58px;flex:0 0 58px;padding:5px;border-radius:17px}
+.mark img{display:block;width:46px;height:46px;object-fit:contain;filter:drop-shadow(0 0 7px #78b5ff8a)}
+@media(max-width:700px){.mark{width:48px;height:48px;flex-basis:48px;padding:3px}.mark img{width:40px;height:40px}}
