@@ -6,7 +6,7 @@ Soren is an original, independent build started during the **October 26 – Nove
 
 ## What's implemented (October 27)
 
-- Responsive midnight-navy dashboard.
+- Bespoke, responsive cosmic intelligence observatory: animated DNA core, connected metric signals, evidence briefing, operating pulse, and data controls.
 - Synthetic retail sample data (no real customer or store records).
 - Local CSV import with schema and numeric validation.
 - Deterministic financial analysis: revenue, gross profit, gross margin, average transaction value, modeled operating result, and break-even revenue.
