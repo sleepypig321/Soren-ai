@@ -1,4 +1,5 @@
 import './style.css';
+import { initAuth, addAccountToolbar } from './auth';
 
 type Sale = { date: string; revenue: number; transactions: number; cogs: number };
 const demo: Sale[] = [
@@ -132,5 +133,6 @@ function render(){
       const result=await res.json() as {error?:string;answer?:string};status.textContent=result.answer||result.error||'No response available.';
     }catch{status.textContent='Local analysis only. Live AI is not enabled.';}
   });
+  addAccountToolbar();
 }
-render();
+initAuth(app, render);
