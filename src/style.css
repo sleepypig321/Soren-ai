@@ -2,3 +2,99 @@
 :root{font-family:'DM Sans',system-ui,sans-serif;color:#e8f0ff;background:#09111f;font-synthesis:none}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-width:320px}button,input{font:inherit}button{cursor:pointer}#app{display:flex;min-height:100vh}.sidebar{position:sticky;top:0;min-width:248px;width:248px;height:100vh;background:#0d192c;border-right:1px solid #20304c;padding:30px 19px;display:flex;flex-direction:column}.brand{display:flex;align-items:center;gap:12px;font-family:Manrope,sans-serif;font-size:23px;letter-spacing:.2em;font-weight:800}.brand small{display:block;font-size:8px;font-weight:600;letter-spacing:.16em;color:#93a9c9;margin-top:5px}.mark{font-family:Georgia,serif;font-style:italic;font-size:30px;color:#bed4ff;border:1px solid #426497;border-radius:12px;padding:4px 13px;box-shadow:0 0 30px #3364ac23}nav{display:flex;flex-direction:column;gap:6px;margin-top:60px}nav a{text-decoration:none;padding:15px;border-radius:11px;color:#9eb0cc;font-size:14px}nav a.active,nav a:hover{background:#1b3152;color:#dfeafa}.sidebar-foot{margin-top:auto;border-top:1px solid #253956;padding-top:22px;color:#b9cbe7;font-size:12px}.sidebar-foot small{display:block;margin:9px 0 0 15px;color:#849cbe}.status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#71cbb2;margin-right:7px}main{width:100%;max-width:1560px;padding:43px clamp(22px,4vw,74px) 30px;margin:0 auto}header,.heading-row,.panel-top,.upload,.line{display:flex;align-items:center;justify-content:space-between;gap:20px}header{margin-bottom:54px}.eyebrow{color:#80a5da;font-size:11px;font-weight:800;letter-spacing:.17em;margin:0 0 12px}h1,h2,h3,h4,p{margin-top:0}h1,h2,h3,h4{font-family:Manrope,system-ui,sans-serif}h1{font-size:clamp(26px,3.1vw,42px);margin-bottom:7px;letter-spacing:-.035em}h2{font-size:21px;margin:0 0 4px}h3{font-size:18px;margin:0 0 6px}h4{font-size:14px;margin:0 0 8px}.muted{font-size:13px;color:#8ca1c1;margin-bottom:0;line-height:1.55}.pill,.tag{border:1px solid #33527e;background:#132a49;color:#9bc5ff;border-radius:50px;padding:9px 13px;font-size:10px;font-weight:800;letter-spacing:.08em;white-space:nowrap}.tag{border-radius:7px}.heading-row{margin-bottom:22px}.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px}.metric,.panel{border:1px solid #253b58;background:linear-gradient(155deg,#14233a,#101d30);border-radius:18px}.metric{padding:22px}.metric p{color:#9fb4d2;font-size:12px;margin-bottom:17px}.metric strong{font:800 clamp(20px,2.5vw,32px) Manrope,sans-serif;letter-spacing:-.04em;display:block}.metric small{display:block;margin-top:9px;color:#7994b8;font-size:11px}.negative{color:#ff9da7}.columns{display:grid;grid-template-columns:1.5fr 1fr;gap:18px;margin-top:18px}.panel{padding:25px}.panel-top{margin-bottom:20px}.chart{height:185px;display:flex;align-items:end;gap:7px;border-bottom:1px solid #395071;background:repeating-linear-gradient(to top,transparent 0,transparent 44px,#ffffff0b 45px,#ffffff0b 46px);padding:0 3px}.bar-wrap{height:100%;flex:1;display:flex;align-items:end}.bar{width:100%;border-radius:5px 5px 0 0;background:linear-gradient(0deg,#315da0,#87baff);box-shadow:0 0 10px #467ab32b;transition:height .2s}.chart-label{display:flex;justify-content:space-between;margin-top:11px;color:#718caf;font-size:10px}label{display:block;color:#b5c6df;font-size:12px;margin:26px 0 10px}input[type=number]{width:100%;border:1px solid #3b5478;border-radius:10px;background:#0b192b;color:#e6f1ff;padding:14px;outline:none}.note{margin:13px 0 18px}.line{border-top:1px solid #2b415f;padding-top:16px;margin-top:16px;font-size:12px;color:#8fa6c8}.line b{color:#e4eeff;font-size:14px}.investigation{margin-top:18px}.findings{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}.findings article{display:flex;gap:13px;padding:15px;border:1px solid #2c4263;border-radius:12px;background:#101d31}.findings p{font-size:12px;line-height:1.55;color:#9aafce;margin:0}.number{font-size:11px;color:#82abef;font-weight:800}.soren-voice{background:#1d3455;border-left:3px solid #8bbcff;border-radius:7px;padding:18px;margin:23px 0}.soren-voice strong{color:#dceaff;font-size:13px}.soren-voice p{color:#bfd0e9;margin:7px 0 0;font-size:13px;line-height:1.6}.button{border:0;border-radius:10px;padding:12px 17px;font-weight:700;font-size:12px;white-space:nowrap}.primary{background:#80b4ff;color:#07192c}.primary:hover{background:#a8ceff}.ghost{background:#192c48;color:#bcd4fa;border:1px solid #3a5880}.ghost:hover{background:#284469}.upload{margin-top:18px}.upload-button{margin:0;cursor:pointer}footer{color:#5f799d;font-size:11px;padding:25px 0}button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid #9dcbff;outline-offset:3px}
 @media(max-width:1100px){.metrics{grid-template-columns:repeat(2,1fr)}.columns{grid-template-columns:1fr}.findings{grid-template-columns:1fr}}
 @media(max-width:700px){#app{display:block}.sidebar{position:static;width:100%;height:auto;min-width:0;padding:18px}.brand{font-size:18px}nav{flex-direction:row;margin-top:18px;overflow:auto}nav a{font-size:11px;padding:10px}.sidebar-foot{display:none}main{padding:27px 18px}header{margin-bottom:35px;align-items:flex-start}header .pill{font-size:9px;padding:7px}h1{font-size:26px}.metrics{gap:9px}.metric{padding:16px}.metric strong{font-size:21px}.panel{padding:18px}.panel-top{align-items:flex-start}.upload{flex-direction:column;align-items:flex-start}.heading-row{align-items:flex-end}}
+
+
+/* Soren Cosmic Intelligence — luminous midnight visual system */
+:root{color-scheme:dark;color:#edf3ff;background:#050a19}
+body{
+  background:
+    radial-gradient(ellipse 72% 48% at 78% 10%,rgba(81,60,174,.28),transparent 72%),
+    radial-gradient(ellipse 65% 55% at 42% 76%,rgba(13,114,175,.19),transparent 75%),
+    #050a19;
+}
+#app{position:relative;isolation:isolate}
+#app::before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:-1;opacity:.7;
+  background-image:
+    radial-gradient(1px 1px at 12% 16%,#d9e5ff 98%,transparent),
+    radial-gradient(2px 2px at 31% 72%,#91c4ff 98%,transparent),
+    radial-gradient(1px 1px at 48% 24%,#e3d7ff 98%,transparent),
+    radial-gradient(1px 1px at 69% 63%,#bfd7ff 98%,transparent),
+    radial-gradient(2px 2px at 87% 14%,#d9c6ff 98%,transparent),
+    radial-gradient(1px 1px at 92% 82%,#e3f4ff 98%,transparent),
+    radial-gradient(1px 1px at 21% 90%,#97bcff 98%,transparent);
+  background-size:330px 290px,510px 380px,410px 330px,490px 410px,570px 470px,390px 490px,620px 520px;
+}
+.sidebar{
+  background:linear-gradient(165deg,#0d1734f5 0%,#0d1630f7 57%,#0b1126fa 100%);
+  border-right:1px solid #6178cd45;
+  box-shadow:16px 0 65px #0409188c,inset -1px 0 #8ea9ff1a;
+}
+.brand{color:#f6f6ff;text-shadow:0 0 24px #94b5ff60}
+.brand small{color:#9faef7}
+.mark{
+  color:#e1e8ff;border-color:#a6b5ff9e;
+  background:radial-gradient(circle at 40% 25%,#6172d27d,transparent 65%),#152449;
+  box-shadow:0 0 17px #6989ff7d,inset 0 0 16px #9c8eff48,0 0 48px #577cff3b;
+}
+nav a.active,nav a:hover{
+  background:linear-gradient(100deg,#233d70cc,#392c6e99);
+  box-shadow:inset 3px 0 #93c9ff,0 0 22px #596cf81c;color:#edf2ff;
+}
+.sidebar-foot{border-color:#7484bd4d}
+.status-dot{background:#8debd3;box-shadow:0 0 12px #70f6db}
+main{position:relative}
+main::before{
+  content:"";position:absolute;z-index:-1;pointer-events:none;
+  left:10%;top:5px;width:min(72vw,860px);height:540px;
+  background:radial-gradient(ellipse at 55% 32%,#6c55ed22,transparent 67%);
+  filter:blur(22px);
+}
+.eyebrow{color:#a2b5ff;text-shadow:0 0 18px #889cff75}
+h1{background:linear-gradient(90deg,#ffffff 8%,#b6d4ff 48%,#c8b4ff 87%);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 0 55px #9a80ff34}
+h2,h3,h4{color:#f3f5ff}
+.pill,.tag{
+  color:#c9d7ff;border:1px solid #9e9bff70;
+  background:linear-gradient(110deg,#233d77c0,#3a2b6fc7);
+  box-shadow:0 0 24px #796efa3a,inset 0 0 12px #8fa9ff1b;
+}
+.metric,.panel{
+  background:
+    radial-gradient(ellipse 120% 130% at 100% 0%,#4d4c9e2f,transparent 60%),
+    linear-gradient(150deg,#172746ed,#101b35ee 70%,#131b38ed);
+  border:1px solid #788cd45c;
+  box-shadow:0 10px 38px #03071580,0 0 25px #657cff17,inset 0 1px #c6cfff16;
+  backdrop-filter:blur(13px);
+}
+.metric{position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s,border-color .2s}
+.metric::after{content:"";position:absolute;inset:-1px -1px auto -1px;height:2px;background:linear-gradient(90deg,transparent,#80baffc0,#bd94ff9c,transparent)}
+.metric:hover,.panel:hover{border-color:#98a8fd88;box-shadow:0 10px 38px #03071580,0 0 30px #678afa30,inset 0 1px #c6cfff24}
+.metric:hover{transform:translateY(-3px)}
+.metric strong{color:#e5efff;text-shadow:0 0 24px #9ebeff57}
+.metric strong.negative{color:#ffabba;text-shadow:0 0 22px #ed6e9866}
+.chart{border-color:#6e80b06e;background:repeating-linear-gradient(to top,transparent 0,transparent 44px,#bdd0ff13 45px,#bdd0ff13 46px)}
+.bar{background:linear-gradient(0deg,#4774f5,#8fcaff 62%,#ccbaff);box-shadow:0 0 12px #5a91ff7d,0 0 28px #756bff3c;min-height:2px}
+input[type=number]{background:#0d1731ec;border-color:#7993df7f;box-shadow:inset 0 0 18px #526adf11}
+.line{border-color:#7082b747}
+.findings article{background:linear-gradient(140deg,#15254bb3,#1a2047b3);border-color:#6d84db60;box-shadow:inset 0 1px #b9caff13}
+.number{color:#aebaff;text-shadow:0 0 12px #8cb7ff}
+.soren-voice{
+  background:linear-gradient(115deg,#24477a9c,#30255a96);
+  border-left:3px solid #b5b9ff;
+  box-shadow:0 0 30px #658aff25,inset 0 1px #b7d4ff24;
+}
+.button.primary{
+  background:linear-gradient(105deg,#9acbff,#9d9dff 60%,#c4aaff);
+  color:#07142d;box-shadow:0 0 16px #7498ff80,0 5px 25px #5d69e64d;
+  transition:transform .2s,box-shadow .2s;
+}
+.button.primary:hover{background:linear-gradient(105deg,#b9deff,#c7adff);transform:translateY(-1px);box-shadow:0 0 26px #8f9cff9c}
+.button.ghost{background:#25355fba;border-color:#788cda7f;color:#d8e5ff}
+.button.ghost:hover{background:#374c83}
+@media(prefers-reduced-motion:no-preference){
+  #app::before{animation:stars-drift 90s linear infinite}
+  .mark{animation:mark-pulse 5s ease-in-out infinite}
+  @keyframes stars-drift{to{background-position:330px 290px,-510px 380px,410px -330px,-490px -410px,570px 470px,-390px 490px,620px -520px}}
+  @keyframes mark-pulse{50%{box-shadow:0 0 25px #8498ffad,inset 0 0 20px #ac83ff66,0 0 62px #5677ff55}}
+}
+@media(max-width:700px){.sidebar{box-shadow:0 10px 50px #03081980}.metric:hover{transform:none}main::before{width:100%;left:0}}
