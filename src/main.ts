@@ -47,44 +47,90 @@ function summarize(rows:Sale[]){
   const operating=profit-fixedCosts,breakEven=margin>0?fixedCosts/(margin/100):null;
   return {revenue,cogs,transactions,profit,margin,average,operating,breakEven,days:rows.length};
 }
+
+let selectedInsight = 'revenue';
 function render(){
   const s=summarize(sales);
-  const latest=[...sales].sort((a,b)=>a.date.localeCompare(b.date));
-  const high=latest.reduce((a,b)=>a.revenue>b.revenue?a:b);
-  const low=latest.reduce((a,b)=>a.revenue<b.revenue?a:b);
-  const max=Math.max(1,...latest.map(r=>r.revenue));
-  const findings=[
-    {title:s.operating<0?'Operating shortfall detected':'Positive modeled operating result',text:'Gross profit '+money(s.profit)+' minus entered fixed costs '+money(fixedCosts)+' = '+money(s.operating)+'. Other expenses are not provided.'},
-    {title:'Sales variability',text:'Highest day '+escapeHTML(high.date)+' ('+money(high.revenue)+'); lowest day '+escapeHTML(low.date)+' ('+money(low.revenue)+'). Investigate staffing, inventory, events, and traffic before assigning a cause.'},
-    {title:'Break-even scenario',text:s.breakEven===null?'Break-even cannot be calculated without positive gross margin.':'At the observed '+pct(s.margin)+' gross margin, modeled break-even revenue is '+money(s.breakEven)+'. This holds costs and product mix constant.'}
+  const ordered=[...sales].sort((a,b)=>a.date.localeCompare(b.date));
+  const high=ordered.reduce((a,b)=>a.revenue>b.revenue?a:b);
+  const low=ordered.reduce((a,b)=>a.revenue<b.revenue?a:b);
+  const options:Record<string,{label:string,value:string,context:string,evidence:string,action:string}> = {
+    revenue:{label:'REVENUE SIGNAL',value:money(s.revenue),context:'Recorded sales across '+s.days+' reporting days.',
+      evidence:'Daily peak: '+money(high.revenue)+' on '+high.date+'. Daily low: '+money(low.revenue)+' on '+low.date+'.',
+      action:'Compare traffic, staffing and availability on high- and low-revenue days before making a causal claim.'},
+    margin:{label:'MARGIN STRUCTURE',value:pct(s.margin),context:'Gross profit as a share of recorded sales.',
+      evidence:'Gross profit '+money(s.profit)+' from '+money(s.revenue)+' revenue after '+money(s.cogs)+' cost of goods.',
+      action:'Investigate category mix and pricing before treating this percentage as good or bad.'},
+    transactions:{label:'TRANSACTION FLOW',value:String(s.transactions),context:'Recorded transactions, not unique customers.',
+      evidence:'Average transaction value is '+money(s.average)+'. Repeat-purchase behavior was not provided.',
+      action:'Review basket composition and checkout behavior to identify responsible ways to increase value.'},
+    costs:{label:'COST PRESSURE',value:money(fixedCosts),context:'Fixed costs entered for this exact reporting period.',
+      evidence:'Modeled result is '+money(s.operating)+', before other unlisted operating expenses.',
+      action:'Validate expense categories and periods before cutting costs or forecasting profitability.'}
+  };
+  if(!options[selectedInsight])selectedInsight='revenue';
+  const active=options[selectedInsight];
+  const verdict=s.operating<0?'An operating gap deserves attention.':'The modeled result is positive.';
+  const points=ordered.map((r,i)=>{
+    const x=ordered.length===1?380:16+i*(748/(ordered.length-1));
+    const max=Math.max(1,...ordered.map(d=>d.revenue));
+    const y=166-(r.revenue/max)*132;
+    return x.toFixed(1)+','+y.toFixed(1);
+  }).join(' ');
+  const orbitItems=[
+    ['revenue','REVENUE',money(s.revenue)],
+    ['margin','GROSS MARGIN',pct(s.margin)],
+    ['transactions','TRANSACTIONS',String(s.transactions)],
+    ['costs','FIXED COSTS',money(fixedCosts)]
   ];
-  app.innerHTML='<aside class="sidebar"><div class="brand"><span class="mark"><img src="/soren-dna.png" alt="" width="42" height="42"/></span><span>SOREN<small>INTELLIGENCE WITH INTENTION</small></span></div><nav><a class="active" href="#overview">◈ &nbsp; Overview</a><a href="#investigation">◎ &nbsp; Investigation</a><a href="#data">▤ &nbsp; Data source</a></nav><div class="sidebar-foot"><span class="status-dot"></span> Local analysis active<small>Meta calls disabled · $0 spent</small></div></aside>'+
-    '<main><header><div><p class="eyebrow">BUSINESS INTELLIGENCE / WORKSPACE 01</p><h1>Good to see you, partner.</h1><p class="muted">Let’s look at what the numbers actually say.</p></div><span class="pill">● DEMO MODE</span></header>'+
-    '<section class="heading-row" id="overview"><div><h2>Performance overview</h2><p class="muted">'+escapeHTML(source)+' · '+s.days+' reporting days</p></div><button id="reset" class="button ghost">Reset sample</button></section>'+
-    '<div class="metrics">'+
-    [['Revenue',money(s.revenue),'Total recorded'],['Gross profit',money(s.profit),pct(s.margin)+' gross margin'],['Avg. transaction',money(s.average),s.transactions+' transactions'],['Modeled result',money(s.operating),'Before unlisted costs']].map((m,i)=>'<article class="metric"><p>'+m[0]+'</p><strong class="'+(i===3&&s.operating<0?'negative':'')+'">'+m[1]+'</strong><small>'+m[2]+'</small></article>').join('')+'</div>'+
-    '<div class="columns"><section class="panel chart-panel"><div class="panel-top"><div><h3>Revenue by day</h3><p class="muted">Observed daily sales, not a forecast</p></div><span class="tag">USD</span></div><div class="chart">'+latest.map(r=>'<div class="bar-wrap" title="'+escapeHTML(r.date)+': '+money(r.revenue)+'"><div class="bar" style="height:'+Math.max(3,Math.round(r.revenue/max*100))+'%"></div></div>').join('')+'</div><div class="chart-label"><span>'+escapeHTML(latest[0].date)+'</span><span>'+escapeHTML(latest[latest.length-1].date)+'</span></div></section>'+
-    '<section class="panel"><div class="panel-top"><div><h3>Financial assumptions</h3><p class="muted">Change inputs to recalculate instantly</p></div></div><label for="fixed">Fixed expenses for this reporting period ($)</label><input id="fixed" type="number" min="0" step="1" value="'+fixedCosts+'"/><p class="muted note">Costs of goods sold are already included in gross profit. Other variable expenses are not included.</p><div class="line"><span>Break-even revenue</span><b>'+(s.breakEven===null?'Unavailable':money(s.breakEven))+'</b></div><div class="line"><span>Recorded transactions</span><b>'+s.transactions+'</b></div></section></div>'+
-    '<section class="panel investigation" id="investigation"><div class="panel-top"><div><p class="eyebrow">SOREN / INVESTIGATION 001</p><h3>Here’s what caught my attention.</h3></div><span class="tag">VERIFIED CALCULATIONS</span></div><div class="findings">'+findings.map((f,i)=>'<article><span class="number">0'+(i+1)+'</span><div><h4>'+f.title+'</h4><p>'+f.text+'</p></div></article>').join('')+'</div><div class="soren-voice"><strong>Soren says</strong><p>We’ve got numbers. Lovely. Now let’s not pretend they tell us everything. These are leads worth investigating—not proof of why a day performed well or badly.</p></div><button id="ask" class="button primary">Ask Soren for a strategy ↗</button><p id="ai-status" class="muted note" role="status">AI remains locked until a server-side spend guard is installed.</p></section>'+
-    '<section class="panel upload" id="data"><div><h3>Bring your own data</h3><p class="muted">CSV columns: date, revenue, transactions, cogs. Use synthetic or data you are authorized to share.</p></div><label class="button ghost upload-button">Import CSV <input id="file" type="file" accept=".csv,text/csv" hidden/></label></section>'+
-    '<footer>Prototype v0.1 · All insights use supplied data · No Meta API calls made</footer></main>';
+  app.innerHTML=
+    '<div class="observatory">'+
+      '<aside class="identity-rail"><div class="rail-logo"><img src="/soren-dna.png" alt="Soren DNA mark"/></div>'+
+        '<div class="rail-divider"></div><nav aria-label="Soren sections"><a href="#intelligence" class="rail-link active" aria-label="Intelligence observatory">✧</a><a href="#signals" class="rail-link" aria-label="Business signals">⌁</a><a href="#data" class="rail-link" aria-label="Data sources">▤</a></nav>'+
+        '<div class="rail-bottom"><span class="rail-pulse"></span><span>01</span></div></aside>'+
+      '<div class="workspace">'+
+        '<div class="topline"><div class="wordmark">SOREN <span> / INTELLIGENCE WITH INTENTION</span></div><div class="top-meta"><span>WORKSPACE 001</span><span class="sep"></span><span class="demo-led">● SYNTHETIC DEMO · AI DISABLED</span></div></div>'+
+        '<div class="hero-line"><div><p class="eyebrow">GOOD TO SEE YOU, PARTNER.</p><h1>Let’s find the <em>signal</em><br/>inside the noise.</h1></div><p class="hero-copy">Your business is a living system. Every figure is connected. Select a signal and follow the evidence.</p></div>'+
+        '<div class="stage" id="intelligence"><section class="orbit-scene" aria-label="Interactive business intelligence map">'+
+          '<div class="orbit-grid"></div><div class="orbital orbital-a"></div><div class="orbital orbital-b"></div><div class="orbital orbital-c"></div>'+
+          '<div class="crosshair crosshair-one">+</div><div class="crosshair crosshair-two">+</div>'+
+          '<div class="orbit-core"><div class="core-aura"></div><div class="core-disc"><img src="/soren-dna.png" alt="Soren glowing DNA emblem"/></div><span class="core-label">SOREN / CORE</span></div>'+
+          orbitItems.map(([id,label,value])=>'<button class="signal signal-'+id+(id===selectedInsight?' selected':'')+'" data-focus="'+id+'" aria-pressed="'+(id===selectedInsight)+'"><span class="signal-point"></span><span class="signal-caption">'+label+'</span><strong>'+value+'</strong></button>').join('')+
+          '<div class="orbit-footer"><span>BUSINESS SYSTEM / '+s.days+' DAY WINDOW</span><span>04 CONNECTED SIGNALS</span></div>'+
+        '</section>'+
+        '<section class="intelligence-brief" aria-live="polite">'+
+          '<div class="brief-top"><span class="mini-mark">✳</span><span>SOREN / LIVE BRIEFING</span><span class="muted-dot">● LOCAL</span></div>'+
+          '<div class="brief-main"><div class="seq">01—04 / CURRENT FOCUS</div><p class="eyebrow">'+active.label+'</p><div class="focus-value">'+active.value+'</div><p class="focus-context">'+active.context+'</p><div class="brief-rule"></div>'+
+          '<p class="brief-caption">WHAT THE DATA SAYS</p><p class="brief-body">'+active.evidence+'</p><p class="brief-caption">WHAT I WOULD INVESTIGATE</p><p class="brief-body">'+active.action+'</p></div>'+
+          '<div class="brief-voice"><span class="voice-icon">S</span><p>“'+verdict+' We can investigate it, but we are absolutely not confusing a hypothesis with a fact.”</p></div>'+
+          '<button class="strategy-button" id="ask">Develop a strategy <span>↗</span></button><p class="api-state" id="ai-status" role="status">Model calls are locked until a server-side spending guard is installed.</p>'+
+        '</section></div>'+
+        '<section class="signal-floor" id="signals"><div class="section-title"><span class="section-index">02 / OPERATING PULSE</span><h2>A pattern worth watching.</h2><p>'+escapeHTML(source)+' · Observed revenue, not a forecast</p></div>'+
+          '<div class="pulse-chart"><svg viewBox="0 0 780 180" role="img" aria-label="Revenue trend across reporting days" preserveAspectRatio="none"><defs><linearGradient id="pulseGrad" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#7aa7ff" stop-opacity=".3"/><stop offset="1" stop-color="#7aa7ff" stop-opacity="0"/></linearGradient></defs><path d="M16 166 H764 M16 122 H764 M16 78 H764 M16 34 H764" fill="none" stroke="#7ca2eb" stroke-opacity=".12"/><polygon points="16,166 '+points+' 764,166" fill="url(#pulseGrad)"/><polyline points="'+points+'" fill="none" stroke="#98beff" stroke-width="3" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/></svg><div class="pulse-axis"><span>'+escapeHTML(ordered[0].date)+'</span><span>'+escapeHTML(ordered[ordered.length-1].date)+'</span></div></div>'+
+          '<div class="metric-band"><div><span>GROSS PROFIT</span><strong>'+money(s.profit)+'</strong></div><div><span>AVG. TRANSACTION</span><strong>'+money(s.average)+'</strong></div><div><span>MODELED RESULT</span><strong class="'+(s.operating<0?'loss':'')+'">'+money(s.operating)+'</strong></div><div><span>BREAK-EVEN REVENUE</span><strong>'+(s.breakEven===null?'N/A':money(s.breakEven))+'</strong></div></div>'+
+        '</section>'+
+        '<section class="data-deck" id="data"><div class="data-heading"><span class="section-index">03 / DATA CONTROL</span><h2>Give me the right evidence.</h2><p>Import your own authorized CSV, or keep exploring the synthetic sample. Your file is processed locally.</p></div><div class="data-controls"><div><label for="fixed">FIXED EXPENSES / SAME PERIOD ($)</label><input id="fixed" type="number" min="0" step="1" value="'+fixedCosts+'"/><small>COGS is already accounted for. Other costs may be absent.</small></div><label class="import-button">IMPORT CSV ↑<input id="file" type="file" accept=".csv,text/csv" hidden/></label><button id="reset" class="reset-button">RESET SAMPLE ↺</button></div><p class="schema">CSV FORMAT: <code>date,revenue,transactions,cogs</code></p></section>'+
+        '<footer>© SOREN / PROTOTYPE 0.2 <span>INTELLIGENCE WITH INTENTION · META AI CURRENTLY DISABLED</span></footer>'+
+      '</div></div>';
+  document.querySelectorAll<HTMLButtonElement>('[data-focus]').forEach(button=>button.addEventListener('click',()=>{
+    selectedInsight=button.dataset.focus||'revenue';render();
+  }));
   document.querySelector<HTMLInputElement>('#fixed')!.addEventListener('change',e=>{
     const n=Number((e.target as HTMLInputElement).value);
     if(Number.isFinite(n)&&n>=0&&n<=1e9){fixedCosts=n;render();}
   });
-  document.querySelector('#reset')!.addEventListener('click',()=>{sales=[...demo];source='Synthetic sample';fixedCosts=1250;render();});
+  document.querySelector('#reset')!.addEventListener('click',()=>{sales=[...demo];source='Synthetic sample';fixedCosts=1250;selectedInsight='revenue';render();});
   document.querySelector<HTMLInputElement>('#file')!.addEventListener('change',async e=>{
     const file=(e.target as HTMLInputElement).files?.[0];if(!file)return;
-    try{if(file.size>200000)throw Error('File exceeds 200 KB.');sales=parseCSV(await file.text());source=file.name;render();}
+    try{if(file.size>200000)throw Error('File exceeds 200 KB.');sales=parseCSV(await file.text());source=file.name;selectedInsight='revenue';render();}
     catch(err){alert(err instanceof Error?err.message:'Unable to read CSV');}
   });
-  document.querySelector('#ask')!.addEventListener('click',async ()=>{
-    const status=document.querySelector<HTMLElement>('#ai-status')!;status.textContent='Checking live intelligence availability...';
+  document.querySelector<HTMLButtonElement>('#ask')!.addEventListener('click',async ()=>{
+    const status=document.querySelector<HTMLElement>('#ai-status')!;status.textContent='Checking live intelligence availability…';
     try{
       const res=await fetch('/api/analyze',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({facts:s,question:'Identify three evidence-based growth opportunities.'})});
-      const result=await res.json() as {error?:string;answer?:string};
-      status.textContent=result.answer||result.error||'No response available.';
-    }catch{status.textContent='Local preview only. Live AI is not deployed yet.';}
+      const result=await res.json() as {error?:string;answer?:string};status.textContent=result.answer||result.error||'No response available.';
+    }catch{status.textContent='Local analysis only. Live AI is not enabled.';}
   });
 }
 render();
