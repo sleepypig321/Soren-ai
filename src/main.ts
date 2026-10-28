@@ -23,6 +23,7 @@ const money = (n:number) => new Intl.NumberFormat('en-US',{style:'currency',curr
 const pct = (n:number) => Number.isFinite(n) ? n.toFixed(1)+'%' : 'N/A';
 const escapeHTML = (s:string) => s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 function parseCSV(text:string): Sale[] {
+  if(/^\uFEFF?Sales Report(?:,|\r?\n)/.test(text.trimStart()) || text.trimStart().startsWith('Sales Report'))throw Error('This is a Clover Sales Report. Use “IMPORT CLOVER DAILY CSV” in the Clover / Retail Data Bridge below. The financial demo importer expects date,revenue,transactions,cogs.');
   const records:string[][]=[]; let row:string[]=[];let cell='';let quoted=false;
   for(let i=0;i<text.length;i++){const c=text[i];
     if(c==='"'){if(quoted&&text[i+1]==='"'){cell+='"';i++;}else quoted=!quoted;}
@@ -130,7 +131,7 @@ function render(){
           '<div class="investigation-boundary"><span>DATA BOUNDARY / 01</span><p>No product-level inventory, traffic, labor, customer identity or supplier records were provided. Soren will not invent a stockout, employee problem or retention trend without those inputs.</p></div>'+
         '</section>'+
         '<section class="inventory-deck" id="inventory" aria-label="Inventory intelligence"></section>'+
-        '<section class="data-deck" id="data"><div class="data-heading"><span class="section-index">03 / DATA CONTROL</span><h2>Give me the right evidence.</h2><p>Import your own authorized CSV, or keep exploring the synthetic sample. Your file is processed locally.</p></div><div class="data-controls"><div><label for="fixed">FIXED EXPENSES / SAME PERIOD ($)</label><input id="fixed" type="number" min="0" step="1" value="'+fixedCosts+'"/><small>COGS is already accounted for. Other costs may be absent.</small></div><label class="import-button">IMPORT CSV ↑<input id="file" type="file" accept=".csv,text/csv" hidden/></label><button id="reset" class="reset-button">RESET SAMPLE ↺</button></div><p class="schema">CSV FORMAT: <code>date,revenue,transactions,cogs</code></p><section class="clover-import" aria-label="Clover daily import"></section></section>'+
+        '<section class="data-deck" id="data"><div class="data-heading"><span class="section-index">03 / DATA CONTROL</span><h2>Give me the right evidence.</h2><p>Import your own authorized CSV, or keep exploring the synthetic sample. Your file is processed locally.</p></div><div class="data-controls"><div><label for="fixed">FIXED EXPENSES / SAME PERIOD ($)</label><input id="fixed" type="number" min="0" step="1" value="'+fixedCosts+'"/><small>COGS is already accounted for. Other costs may be absent.</small></div><label class="import-button">IMPORT FINANCIAL CSV ↑<input id="file" type="file" accept=".csv,text/csv" hidden/></label><button id="reset" class="reset-button">RESET SAMPLE ↺</button></div><p class="schema">CSV FORMAT: <code>date,revenue,transactions,cogs</code></p><section class="clover-import" aria-label="Clover daily import"></section></section>'+
         '<footer>© SOREN / PROTOTYPE 0.2 <span>INTELLIGENCE WITH INTENTION · META AI CURRENTLY DISABLED</span></footer>'+
       '</div></div>';
   document.querySelectorAll<HTMLButtonElement>('[data-page-link]').forEach(button => button.addEventListener('click', () => {
