@@ -1,4 +1,5 @@
 import './style.css';
+import { canSyncImports, loadCloudImport, saveCloudImport, removeCloudImport } from './import-sync';
 import { openSorenConversation, attachSorenLauncher } from './conversation';
 import { initAuth, addAccountToolbar, getActiveBusinessId, getActiveUserId } from './auth';
 import { investigateRetail } from './investigations';
@@ -19,12 +20,14 @@ let sales = [...demo];
 let source = 'Synthetic sample';
 let fixedCosts = 1250;
 let importedScope='';
+let financialRevision=0;
+let financialCloudStatus='LOCAL BROWSER COPY';
 const financialKey=(id:string)=>'soren:financial-daily:v1:'+id;
 function restoreFinancialImport(){
   const id=getActiveUserId();
   const key=id?id+':'+(getActiveBusinessId()??'personal'):'signed-out';
   if(importedScope===key)return;
-  importedScope=key;sales=[...demo];source='Synthetic sample';fixedCosts=1250;
+  importedScope=key;financialRevision++;financialCloudStatus='LOCAL BROWSER COPY';sales=[...demo];source='Synthetic sample';fixedCosts=1250;
   if(!id)return;
   try{
     const raw=localStorage.getItem(financialKey(key));if(!raw)return;
@@ -34,6 +37,20 @@ function restoreFinancialImport(){
     sales=stored.sales;source=typeof stored.source==='string'?stored.source.slice(0,150):'Saved financial CSV';
     fixedCosts=Number.isFinite(stored.fixedCosts)&&stored.fixedCosts>=0&&stored.fixedCosts<=1e9?stored.fixedCosts:1250;
   }catch{/* Continue with the synthetic sample when browser storage is unavailable. */}
+  if(canSyncImports()){
+    const revision=financialRevision;
+    void loadCloudImport('financial_daily').then(async payload=>{
+      if(importedScope!==key||financialRevision!==revision)return;
+      const cloud=payload as {sales?:Sale[];source?:string;fixedCosts?:number}|null;
+      if(cloud?.sales&&Array.isArray(cloud.sales)&&cloud.sales.length>=1&&cloud.sales.length<=366&&cloud.sales.every(row=>/^\\d{4}-\\d{2}-\\d{2}$/.test(row.date)&&Number.isFinite(row.revenue)&&row.revenue>=0&&Number.isInteger(row.transactions)&&row.transactions>=0&&Number.isFinite(row.cogs)&&row.cogs>=0&&row.cogs<=row.revenue)){
+        sales=cloud.sales;source=typeof cloud.source==='string'?cloud.source.slice(0,150):'Saved financial data';fixedCosts=Number.isFinite(cloud.fixedCosts)&&cloud.fixedCosts!>=0&&cloud.fixedCosts!<=1e9?cloud.fixedCosts!:1250;
+        saveFinancialImport();financialCloudStatus='RESTORED FROM PRIVATE CLOUD';render();
+      }else if(!payload&&source!=='Synthetic sample'){
+        await saveCloudImport('financial_daily',{sales,source,fixedCosts});
+        if(importedScope===key)financialCloudStatus='SYNCED TO PRIVATE CLOUD';
+      }
+    }).catch(()=>{if(importedScope===key)financialCloudStatus='OFFLINE / LOCAL COPY AVAILABLE';});
+  }
 }
 function saveFinancialImport():boolean{
   if(importedScope==='signed-out')return false;
@@ -158,7 +175,7 @@ function render(){
           '<div class="investigation-boundary"><span>DATA BOUNDARY / 01</span><p>No product-level inventory, traffic, labor, customer identity or supplier records were provided. Soren will not invent a stockout, employee problem or retention trend without those inputs.</p></div>'+
         '</section>'+
         '<section class="inventory-deck" id="inventory" aria-label="Inventory intelligence"></section>'+
-        '<section class="data-deck" id="data"><div class="data-heading"><span class="section-index">03 / DATA CONTROL</span><h2>Give me the right evidence.</h2><p>Import an authorized CSV. Your import is saved on this browser for this account and business, not synced across devices. Avoid shared computers.</p></div><div class="data-controls"><div><label for="fixed">FIXED EXPENSES / SAME PERIOD ($)</label><input id="fixed" type="number" min="0" step="1" value="'+fixedCosts+'"/><small>COGS is already accounted for. Other costs may be absent.</small></div><label class="import-button">IMPORT FINANCIAL CSV ↑<input id="file" type="file" accept=".csv,text/csv" hidden/></label><button id="reset" class="reset-button">RESET SAMPLE ↺</button></div><p class="schema">CSV FORMAT: <code>date,revenue,transactions,cogs</code> · '+(source==='Synthetic sample'?'SYNTHETIC SAMPLE ACTIVE':'SAVED: '+escapeHTML(source))+'</p><section class="clover-import" aria-label="Clover daily import"></section></section>'+
+        '<section class="data-deck" id="data"><div class="data-heading"><span class="section-index">03 / DATA CONTROL</span><h2>Give me the right evidence.</h2><p>Import an authorized CSV. Your import is saved on this browser for this account and business, not synced across devices. Avoid shared computers.</p></div><div class="data-controls"><div><label for="fixed">FIXED EXPENSES / SAME PERIOD ($)</label><input id="fixed" type="number" min="0" step="1" value="'+fixedCosts+'"/><small>COGS is already accounted for. Other costs may be absent.</small></div><label class="import-button">IMPORT FINANCIAL CSV ↑<input id="file" type="file" accept=".csv,text/csv" hidden/></label><button id="reset" class="reset-button">RESET SAMPLE ↺</button></div><p class="schema">CSV FORMAT: <code>date,revenue,transactions,cogs</code> · '+(source==='Synthetic sample'?'SYNTHETIC SAMPLE ACTIVE':'SAVED: '+escapeHTML(source))+' · '+escapeHTML(financialCloudStatus)+'</p><section class="clover-import" aria-label="Clover daily import"></section></section>'+
         '<footer>© SOREN / PROTOTYPE 0.2 <span>INTELLIGENCE WITH INTENTION · META AI CURRENTLY DISABLED</span></footer>'+
       '</div></div>';
   document.querySelectorAll<HTMLButtonElement>('[data-page-link]').forEach(button => button.addEventListener('click', () => {
@@ -174,12 +191,12 @@ function render(){
   }));
   document.querySelector<HTMLInputElement>('#fixed')!.addEventListener('change',e=>{
     const n=Number((e.target as HTMLInputElement).value);
-    if(Number.isFinite(n)&&n>=0&&n<=1e9){fixedCosts=n;saveFinancialImport();render();}
+    if(Number.isFinite(n)&&n>=0&&n<=1e9){financialRevision++;fixedCosts=n;saveFinancialImport();if(source!=='Synthetic sample'&&canSyncImports())void saveCloudImport('financial_daily',{sales,source,fixedCosts}).catch(()=>{});render();}
   });
-  document.querySelector('#reset')!.addEventListener('click',()=>{sales=[...demo];source='Synthetic sample';fixedCosts=1250;selectedInsight='revenue';saveFinancialImport();render();});
+  document.querySelector('#reset')!.addEventListener('click',()=>{financialRevision++;sales=[...demo];source='Synthetic sample';fixedCosts=1250;selectedInsight='revenue';saveFinancialImport();if(canSyncImports())void removeCloudImport('financial_daily').catch(()=>{});render();});
   document.querySelector<HTMLInputElement>('#file')!.addEventListener('change',async e=>{
     const file=(e.target as HTMLInputElement).files?.[0];if(!file)return;
-    try{if(file.size>200000)throw Error('File exceeds 200 KB.');sales=parseCSV(await file.text());source=file.name;selectedInsight='revenue';const saved=saveFinancialImport();render();if(!saved)alert('File imported for this session, but this browser could not store it for future visits.');}
+    try{if(file.size>200000)throw Error('File exceeds 200 KB.');financialRevision++;sales=parseCSV(await file.text());source=file.name;selectedInsight='revenue';const saved=saveFinancialImport();if(canSyncImports()){const targetScope=importedScope;void saveCloudImport('financial_daily',{sales,source,fixedCosts}).then(()=>{if(importedScope===targetScope){financialCloudStatus='SYNCED TO PRIVATE CLOUD';render();}}).catch(()=>{if(importedScope===targetScope){financialCloudStatus='OFFLINE / LOCAL COPY AVAILABLE';render();}});}render();if(!saved)alert('File imported for this session, but this browser could not store it for future visits.');}
     catch(err){alert(err instanceof Error?err.message:'Unable to read CSV');}
   });
   if(activePage==='data')renderCloverImport(document.querySelector<HTMLElement>('.clover-import')!, (getActiveUserId()??'signed-out')+':'+(getActiveBusinessId()??'personal'));
