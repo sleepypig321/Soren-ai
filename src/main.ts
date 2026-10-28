@@ -30,19 +30,19 @@ function restoreFinancialImport(){
   importedScope=key;financialRevision++;financialCloudStatus='LOCAL BROWSER COPY';sales=[...demo];source='Synthetic sample';fixedCosts=1250;
   if(!id)return;
   try{
-    const raw=localStorage.getItem(financialKey(key));if(!raw)return;
+    const raw=localStorage.getItem(financialKey(key));if(raw){
     const stored=JSON.parse(raw) as {sales:Sale[];source:string;fixedCosts:number};
-    if(!Array.isArray(stored.sales)||stored.sales.length<1||stored.sales.length>366)return;
-    if(!stored.sales.every(row=>/^\d{4}-\d{2}-\d{2}$/.test(row.date)&&Number.isFinite(row.revenue)&&row.revenue>=0&&Number.isInteger(row.transactions)&&row.transactions>=0&&Number.isFinite(row.cogs)&&row.cogs>=0&&row.cogs<=row.revenue))return;
+    if(Array.isArray(stored.sales)&&stored.sales.length>=1&&stored.sales.length<=366&&stored.sales.every(row=>/^\d{4}-\d{2}-\d{2}$/.test(row.date)&&Number.isFinite(row.revenue)&&row.revenue>=0&&Number.isInteger(row.transactions)&&row.transactions>=0&&Number.isFinite(row.cogs)&&row.cogs>=0&&row.cogs<=row.revenue)){
     sales=stored.sales;source=typeof stored.source==='string'?stored.source.slice(0,150):'Saved financial CSV';
     fixedCosts=Number.isFinite(stored.fixedCosts)&&stored.fixedCosts>=0&&stored.fixedCosts<=1e9?stored.fixedCosts:1250;
+    }}
   }catch{/* Continue with the synthetic sample when browser storage is unavailable. */}
   if(canSyncImports()){
     const revision=financialRevision;
     void loadCloudImport('financial_daily').then(async payload=>{
       if(importedScope!==key||financialRevision!==revision)return;
       const cloud=payload as {sales?:Sale[];source?:string;fixedCosts?:number}|null;
-      if(cloud?.sales&&Array.isArray(cloud.sales)&&cloud.sales.length>=1&&cloud.sales.length<=366&&cloud.sales.every(row=>/^\\d{4}-\\d{2}-\\d{2}$/.test(row.date)&&Number.isFinite(row.revenue)&&row.revenue>=0&&Number.isInteger(row.transactions)&&row.transactions>=0&&Number.isFinite(row.cogs)&&row.cogs>=0&&row.cogs<=row.revenue)){
+      if(cloud?.sales&&Array.isArray(cloud.sales)&&cloud.sales.length>=1&&cloud.sales.length<=366&&cloud.sales.every(row=>/^\d{4}-\d{2}-\d{2}$/.test(row.date)&&Number.isFinite(row.revenue)&&row.revenue>=0&&Number.isInteger(row.transactions)&&row.transactions>=0&&Number.isFinite(row.cogs)&&row.cogs>=0&&row.cogs<=row.revenue)){
         sales=cloud.sales;source=typeof cloud.source==='string'?cloud.source.slice(0,150):'Saved financial data';fixedCosts=Number.isFinite(cloud.fixedCosts)&&cloud.fixedCosts!>=0&&cloud.fixedCosts!<=1e9?cloud.fixedCosts!:1250;
         saveFinancialImport();financialCloudStatus='RESTORED FROM PRIVATE CLOUD';render();
       }else if(!payload&&source!=='Synthetic sample'){
