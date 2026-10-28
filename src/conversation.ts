@@ -136,7 +136,28 @@ export async function openSorenConversation(facts:Summary,source:string) {
       }else{
         const {data:{session}}=await supabase.auth.getSession();
         if(!session)throw Error('Session expired. Please sign in again.');
-        const res=await fetch('/api/chat',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+session.access_token},body:JSON.stringify({question,facts,history:prior,memories:notes.slice(0,8).map(note=>note.note)})});
+        // Owner-owned Business DNA is context, never an instruction or an authorization source.
+        let dnaContext:string[]=[];
+        if(businessId){
+          const {data:dna,error:dnaError}=await supabase.from('business_dna')
+            .select('retail_type,locations,business_stage,monthly_revenue_goal,primary_goal,biggest_challenge,existing_attempts,communication_style')
+            .eq('business_id',businessId).eq('owner_id',userId).maybeSingle();
+          if(dnaError)throw dnaError;
+          if(dna){
+            const parts=[
+              'Retail category: '+dna.retail_type,
+              'Locations: '+dna.locations,
+              'Stage: '+dna.business_stage,
+              'Monthly revenue goal: '+(dna.monthly_revenue_goal??'not provided'),
+              'Main goal: '+dna.primary_goal,
+              'Current challenge: '+dna.biggest_challenge,
+              'Previously tried: '+dna.existing_attempts,
+              'Preferred tone: '+dna.communication_style
+            ];
+            dnaContext=parts.map(v=>v.slice(0,500));
+          }
+        }
+        const res=await fetch('/api/chat',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+session.access_token},body:JSON.stringify({question,facts,history:prior,memories:[...dnaContext,...notes.map(note=>note.note)].slice(0,8)})});
         const response=await res.json() as {answer?:string;error?:string;demo?:boolean};
         if(res.status===503&&response.demo)reply=preview(question,facts);
         else if(res.ok&&response.answer)reply=response.answer;
