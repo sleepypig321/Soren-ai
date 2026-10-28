@@ -55,7 +55,7 @@ async function chat(request: Request, env: Env): Promise<Response> {
   if (Number(request.headers.get('content-length') ?? '0') > 6000) return json({error:'Request too large'},413);
   let body: { question?: unknown; facts?: unknown; history?: unknown };
   try { body = await request.json(); } catch { return json({error:'Invalid request JSON'},400); }
-  if (typeof body.question !== 'string' || body.question.trim().length < 1 || body.question.length > 600 ||
+  if (!body || typeof body !== 'object' || typeof body.question !== 'string' || body.question.trim().length < 1 || body.question.length > 600 ||
       !validFacts(body.facts) || JSON.stringify(body).length > 6000) return json({error:'Invalid chat input'},400);
   const past = body.history;
   if (past !== undefined && (!Array.isArray(past) || past.length > 6 ||
