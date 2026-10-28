@@ -284,3 +284,60 @@
 .clover-limit{padding:17px 21px;background:#2421438a;border-left:2px solid #b6a2ff;color:#b8cae9;font-size:12px;line-height:1.7;margin:20px 0}
 .clover-empty{color:#9bb5dc;background:#152646;padding:24px;font-size:12px}
 @media(max-width:750px){.clover-heading{align-items:stretch;flex-direction:column}.clover-summary{grid-template-columns:1fr}}
+
+
+/* Viewport-safe layout: every page works without horizontal scrolling */
+html,body,#app{max-width:100%;overflow-x:clip}
+.observatory,.workspace,.stage,.signal-floor,.data-deck,.inventory-deck,.investigation-list,.clover-import{min-width:0;max-width:100%}
+.workspace{flex:1 1 auto;min-width:0}
+.topline,.account-toolbar,.inventory-title,.inventory-operations,.clover-heading{min-width:0}
+.wordmark,.top-meta,.inventory-source,.account-name{overflow-wrap:anywhere}
+img,svg{max-width:100%}
+.inventory-table-wrap,.clover-table-wrap{max-width:100%}
+.investigation-card,.inventory-stats>div,.clover-summary>div{min-width:0}
+.investigation-main strong,.inventory-main strong,.clover-summary strong{overflow-wrap:anywhere}
+@media(max-width:800px){
+  .inventory-table-wrap,.clover-table-wrap{overflow:visible;max-height:none;border:0;background:transparent}
+  .inventory-table,.clover-table-wrap table{display:block;width:100%;min-width:0}
+  .inventory-table thead,.clover-table-wrap thead{display:none}
+  .inventory-table tbody,.clover-table-wrap tbody{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:13px;width:100%}
+  .inventory-table tr,.clover-table-wrap tr{display:block;width:100%;min-width:0;background:linear-gradient(130deg,#1b2d50,#0a1733);border:1px solid #849bd16b;padding:13px;box-shadow:inset 0 1px #a4b9ff13}
+  .inventory-table td,.clover-table-wrap td{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 3px;min-width:0;border-top:0;border-bottom:1px solid #708dc238;text-align:right;overflow-wrap:anywhere}
+  .inventory-table td::before,.clover-table-wrap td::before{content:attr(data-label);font-size:9px;font-weight:800;letter-spacing:.1em;color:#9fb9e8;text-align:left;flex:0 1 47%}
+  .inventory-table td:first-child{align-items:flex-start}
+  .inventory-table td:last-child,.clover-table-wrap td:last-child{border-bottom:0}
+  .inventory-table td strong,.inventory-table td small{overflow-wrap:anywhere}
+  .clover-table-wrap tr:nth-child(even){background:linear-gradient(130deg,#1b2d50,#0a1733)}
+  .inventory-table td{font-size:12px}
+  .clover-table-wrap td{font-size:12px}
+}
+@media(max-width:650px){
+  .workspace{padding:15px 12px 28px;max-width:calc(100vw - 58px)}
+  .identity-rail{max-width:58px}
+  .topline{display:flex;flex-wrap:wrap;gap:12px}
+  .top-meta{text-align:left}
+  .wordmark{white-space:normal}
+  .account-toolbar{display:flex;flex-wrap:wrap}
+  .account-toolbar select{max-width:100%;min-width:0}
+  .account-toolbar button{max-width:100%}
+  .inventory-stats{grid-template-columns:1fr}
+  .clover-summary{grid-template-columns:1fr}
+  .inventory-priorities article div{flex-direction:column;align-items:flex-start}
+  .investigation-main{display:block}
+  .investigation-main strong{display:block;margin-top:9px}
+  .data-controls{flex-wrap:wrap}
+  .data-controls>div{min-width:0;max-width:100%}
+  .clover-daily-chart{gap:2px;padding:12px 6px 0}
+  .clover-daily-chart>div{min-width:0}
+  .clover-table-wrap tbody,.inventory-table tbody{grid-template-columns:1fr}
+}
+@media(max-width:390px){
+  .identity-rail{width:48px;flex-basis:48px;max-width:48px;padding:12px 2px}
+  .rail-logo{width:44px;height:48px}.rail-logo img{width:48px;height:48px}
+  .workspace{max-width:calc(100vw - 48px);padding:13px 9px 25px}
+  .rail-link{width:33px;height:33px}
+  .wordmark{font-size:12px;letter-spacing:.19em}
+  .inventory-table tr,.clover-table-wrap tr{padding:10px}
+  .data-heading h2,.inventory-title h2{font-size:27px}
+  .account-name{font-size:9px}
+}
