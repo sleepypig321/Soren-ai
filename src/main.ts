@@ -1,6 +1,7 @@
 import './style.css';
 import { openSorenConversation, attachSorenLauncher } from './conversation';
 import { initAuth, addAccountToolbar } from './auth';
+import { investigateRetail } from './investigations';
 
 type Sale = { date: string; revenue: number; transactions: number; cogs: number };
 const demo: Sale[] = [
@@ -33,9 +34,12 @@ function parseCSV(text:string): Sale[] {
   const required=['date','revenue','transactions','cogs'];
   if(required.some(h=>!headers.includes(h)))throw Error('CSV needs columns: date, revenue, transactions, cogs.');
   if(records.length===0||records.length>366)throw Error('Upload between 1 and 366 daily rows.');
+  const seen=new Set<string>();
   return records.map((r,i)=>{
     const field=(name:string)=>r[headers.indexOf(name)]?.trim()||'';
     const date=field('date');if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||Number.isNaN(Date.parse(date)))throw Error('Row '+(i+2)+': date must be YYYY-MM-DD.');
+    if(seen.has(date))throw Error('Row '+(i+2)+': duplicate date '+date+'. Provide one row per calendar day.');
+    seen.add(date);
     const vals=['revenue','transactions','cogs'].map(h=>field(h));
     if(vals.some(v=>v===''||!Number.isFinite(Number(v))||Number(v)<0))throw Error('Row '+(i+2)+': values must be nonnegative numbers.');
     const [revenue,transactions,cogs]=vals.map(Number);
@@ -56,6 +60,7 @@ let activePage: Page = getPage();
 let selectedInsight = 'revenue';
 function render(){
   const s=summarize(sales);
+  const investigations=investigateRetail(sales,fixedCosts);
   const ordered=[...sales].sort((a,b)=>a.date.localeCompare(b.date));
   const high=ordered.reduce((a,b)=>a.revenue>b.revenue?a:b);
   const low=ordered.reduce((a,b)=>a.revenue<b.revenue?a:b);
@@ -93,7 +98,7 @@ function render(){
       '<aside class="identity-rail"><div class="rail-logo"><img src="/soren-dna.png" alt="Soren DNA mark"/></div>'+
         '<div class="rail-divider"></div><nav aria-label="Soren pages">'+
           '<button type="button" data-page-link="overview" class="rail-link'+(activePage==='overview'?' active':'')+'" aria-label="Overview" aria-current="'+(activePage==='overview'?'page':'false')+'" data-tooltip="Overview">✧</button>'+
-          '<button type="button" data-page-link="signals" class="rail-link'+(activePage==='signals'?' active':'')+'" aria-label="Business signals" aria-current="'+(activePage==='signals'?'page':'false')+'" data-tooltip="Business Signals">⌁</button>'+
+          '<button type="button" data-page-link="signals" class="rail-link'+(activePage==='signals'?' active':'')+'" aria-label="Retail investigations" aria-current="'+(activePage==='signals'?'page':'false')+'" data-tooltip="Retail Investigations">⌁</button>'+
           '<button type="button" data-page-link="data" class="rail-link'+(activePage==='data'?' active':'')+'" aria-label="Data sources" aria-current="'+(activePage==='data'?'page':'false')+'" data-tooltip="Data Sources">▤</button>'+
           '</nav>'+
         '<div class="rail-bottom"><span class="rail-pulse"></span><span>01</span></div></aside>'+
@@ -114,7 +119,7 @@ function render(){
           '<div class="brief-voice"><span class="voice-icon">S</span><p>“'+verdict+' We can investigate it, but we are absolutely not confusing a hypothesis with a fact.”</p></div>'+
           '<button class="strategy-button" id="ask">Develop a strategy <span>↗</span></button><p class="api-state" id="ai-status" role="status">Talk to Soren in local preview mode. Live Meta calls remain locked for credit safety.</p>'+
         '</section></div>'+
-        '<section class="signal-floor" id="signals"><div class="section-title"><span class="section-index">02 / OPERATING PULSE</span><h2>A pattern worth watching.</h2><p>'+escapeHTML(source)+' · Observed revenue, not a forecast</p></div>'+
+        '<section class="signal-floor" id="signals"><div class="section-title"><span class="section-index">02 / RETAIL INVESTIGATION DESK</span><h2>Let’s examine the evidence.</h2><p>'+escapeHTML(source)+' · '+s.days+' reporting rows · Calculations run locally · No Meta credits used</p></div>'+
           '<div class="pulse-chart"><svg viewBox="0 0 780 180" role="img" aria-label="Revenue trend across reporting days" preserveAspectRatio="none"><defs><linearGradient id="pulseGrad" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#7aa7ff" stop-opacity=".3"/><stop offset="1" stop-color="#7aa7ff" stop-opacity="0"/></linearGradient></defs><path d="M16 166 H764 M16 122 H764 M16 78 H764 M16 34 H764" fill="none" stroke="#7ca2eb" stroke-opacity=".12"/><polygon points="16,166 '+points+' 764,166" fill="url(#pulseGrad)"/><polyline points="'+points+'" fill="none" stroke="#98beff" stroke-width="3" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/></svg><div class="pulse-axis"><span>'+escapeHTML(ordered[0].date)+'</span><span>'+escapeHTML(ordered[ordered.length-1].date)+'</span></div></div>'+
           '<div class="metric-band"><div><span>GROSS PROFIT</span><strong>'+money(s.profit)+'</strong></div><div><span>AVG. TRANSACTION</span><strong>'+money(s.average)+'</strong></div><div><span>MODELED RESULT</span><strong class="'+(s.operating<0?'loss':'')+'">'+money(s.operating)+'</strong></div><div><span>BREAK-EVEN REVENUE</span><strong>'+(s.breakEven===null?'N/A':money(s.breakEven))+'</strong></div></div>'+
         '</section>'+
@@ -143,6 +148,7 @@ function render(){
     catch(err){alert(err instanceof Error?err.message:'Unable to read CSV');}
   });
   const beginConversation = () => openSorenConversation(s, source);
+  document.querySelector<HTMLButtonElement>('#investigate-chat')?.addEventListener('click', beginConversation);
   document.querySelector<HTMLButtonElement>('#ask')!.addEventListener('click', beginConversation);
   const core = document.querySelector<HTMLElement>('#soren-core')!;
   core.addEventListener('click', beginConversation);
