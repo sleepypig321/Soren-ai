@@ -2,6 +2,7 @@ type Day={date:string;net:number;gross:number|null;discount:number|null};
 type CloverReport={days:Day[];reportedNet:number;period:string;fileName:string};
 let current:CloverReport|null=null;
 let scope='';
+let enteredCogs='';
 const money=(n:number)=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2,maximumFractionDigits:2}).format(n);
 const esc=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 const sum=(d:Day[])=>d.reduce((a,b)=>a+b.net,0);
@@ -54,7 +55,7 @@ function parse(raw:string,fileName:string):CloverReport{
   return {days,reportedNet,period,fileName};
 }
 export function renderCloverImport(container:HTMLElement,accountScope:string){
-  if(scope!==accountScope){scope=accountScope;current=null;}
+  if(scope!==accountScope){scope=accountScope;current=null;enteredCogs='';}
   const paint=()=>{
     const report=current;
     container.innerHTML='<div class="clover-heading"><div><span class="section-index">CLOVER / RETAIL DATA BRIDGE</span><h3>Bring your sales into the conversation.</h3><p>Upload Clover’s Daily Sales Report CSV without rearranging columns. Data stays in this browser session—never in the public repository.</p></div><label class="import-button">IMPORT CLOVER DAILY CSV ↑<input id="clover-upload" type="file" accept=".csv,text/csv" hidden/></label></div><p id="clover-feedback" class="clover-feedback" role="status"></p><div class="clover-results"></div>';
@@ -69,17 +70,31 @@ export function renderCloverImport(container:HTMLElement,accountScope:string){
       const recent=complete.slice(-7),prior=complete.slice(-14,-7);
       const avg=(xs:Day[])=>xs.length?sum(xs)/xs.length:0;
       const variation=prior.length&&avg(prior)>0?(avg(recent)/avg(prior)-1)*100:null;
+      const cogsProvided=enteredCogs.trim()!=='';
+      const cogs=cogsProvided?Number(enteredCogs):null;
+      const grossProfit=cogs===null?null:report.reportedNet-cogs;
+      const grossMargin=grossProfit!==null&&report.reportedNet!==0?grossProfit/report.reportedNet*100:null;
       results.innerHTML='<div class="clover-summary"><div><span>RECONCILED NET SALES</span><strong>'+money(report.reportedNet)+'</strong></div><div><span>REPORTING DAYS</span><strong>'+days.length+'</strong></div><div><span>LAST 7 VS PRIOR 7</span><strong>'+(variation===null?'N/A':(variation>=0?'+':'')+variation.toFixed(1)+'%')+'</strong></div></div>'+
         '<p class="clover-reconcile">✓ Sum of daily figures reconciles to the Clover report total. '+(last.date===today?'The current date is excluded from the seven-day comparison because it may be incomplete.':'Seven-day comparisons assume all reported days are complete.')+'</p>'+
         '<div class="clover-daily-chart" role="img" aria-label="Clover daily net sales bars">'+days.map(d=>'<div title="'+esc(d.date+': '+money(d.net))+'"><span style="height:'+Math.max(2,Math.max(0,d.net)/max*100)+'%"></span></div>').join('')+'</div>'+
+        '<section class="clover-profit-model" aria-label="Financial intelligence from owner provided costs"><div><span class="section-index">FINANCIAL INTELLIGENCE / OWNER INPUT</span><h4>Revenue is not profit. Let’s get specific.</h4><p>Enter total cost of goods sold for <strong>this exact Clover reporting period</strong>, excluding operating expenses. This is your supplied figure, not a value verified by Clover.</p></div><label for="clover-cogs">COST OF GOODS SOLD / MATCHING PERIOD ($)</label><div class="clover-profit-entry"><input id="clover-cogs" type="number" min="0" max="1000000000" step="0.01" placeholder="Unknown — leave blank" value="'+esc(enteredCogs)+'"/><button type="button" class="reset-button" id="clover-clear-cost">CLEAR</button></div>'+ (grossProfit===null?'<p class="clover-profit-pending">GROSS PROFIT & MARGIN / UNAVAILABLE UNTIL COST IS SUPPLIED</p>':'<div class="clover-profit-results"><div><span>MODELED GROSS PROFIT</span><strong>'+money(grossProfit)+'</strong></div><div><span>MODELED GROSS MARGIN</span><strong>'+(grossMargin===null?'N/A — ZERO NET SALES':grossMargin.toFixed(1)+'%')+'</strong></div></div><p class="clover-profit-caution">Calculated from reconciled net sales and <strong>owner-entered COGS</strong>. Not independently verified. This is not operating or net profit: labor, rent, fees, other variable expenses and taxes have not been supplied. A negative gross profit can be valid.</p>')+'</section>'+
         '<div class="clover-table-wrap"><table><thead><tr><th>DATE</th><th>NET SALES</th><th>GROSS SALES</th><th>DISCOUNTS</th></tr></thead><tbody>'+days.map(d=>'<tr><td data-label="DATE">'+d.date+'</td><td data-label="NET SALES">'+money(d.net)+'</td><td data-label="GROSS SALES">'+(d.gross===null?'N/A':money(d.gross))+'</td><td data-label="DISCOUNTS">'+(d.discount===null?'N/A':money(d.discount))+'</td></tr>').join('')+'</tbody></table></div>'+
         '<section class="clover-evidence" aria-label="Missing business intelligence inputs"><div class="clover-evidence-head"><span class="section-index">SOREN / EVIDENCE CHECK</span><h4>What I need before we call this profit.</h4><p>Sales are verified. The rest is an open investigation, darling—not an invitation to make numbers up.</p></div><div class="clover-evidence-grid">'+
         '<article class="clover-evidence-item"><span class="clover-evidence-state">NEEDS DATA</span><h5>Transaction counts</h5><p>Export the matching date range from Clover orders or transaction reporting.</p><span>UNLOCKS / AVERAGE TRANSACTION</span></article>'+
-        '<article class="clover-evidence-item"><span class="clover-evidence-state">NEEDS DATA</span><h5>Cost of goods sold</h5><p>Provide actual item costs or a COGS report for the same period. Revenue is not profit.</p><span>UNLOCKS / GROSS PROFIT & MARGIN</span></article>'+
+        '<article class="clover-evidence-item"><span class="clover-evidence-state">'+(cogsProvided?'OWNER-SUPPLIED':'NEEDS DATA')+'</span><h5>Cost of goods sold</h5><p>Provide actual item costs or a COGS report for the same period. Revenue is not profit.</p><span>UNLOCKS / GROSS PROFIT & MARGIN</span></article>'+
         '<article class="clover-evidence-item"><span class="clover-evidence-state">NEEDS DATA</span><h5>Operating expenses</h5><p>Provide fixed and variable expenses for this period, separate from COGS.</p><span>UNLOCKS / MODELED BREAK-EVEN</span></article>'+
         '<article class="clover-evidence-item"><span class="clover-evidence-state">NEEDS DATA</span><h5>Product movement & stock</h5><p>Provide item-level sales plus current on-hand quantities.</p><span>UNLOCKS / INVENTORY INTELLIGENCE</span></article></div>'+
-        '<div class="clover-evidence-footer"><p><strong>Evidence boundary:</strong> None of these inputs are present in this Clover export. Missing metrics are not zero; the synthetic demo remains separate. Keep private reports out of the public repository.</p><button id="clover-evidence-template" type="button" class="reset-button">DOWNLOAD DATA CHECKLIST ↓</button></div></section>';
+        '<div class="clover-evidence-footer"><p><strong>Evidence boundary:</strong> The Clover report does not provide transaction counts, expenses, or inventory. '+(cogsProvided?'COGS is owner-entered, not verified by Clover.':'COGS is also missing.')+' Missing metrics are not zero; the synthetic demo remains separate. Keep private reports out of the public repository.</p><button id="clover-evidence-template" type="button" class="reset-button">DOWNLOAD DATA CHECKLIST ↓</button></div></section>';
     }else results.innerHTML='<p class="clover-empty">Waiting for an authorized Clover daily sales report. No data uploaded yet.</p>';
+    container.querySelector<HTMLInputElement>('#clover-cogs')?.addEventListener('change',e=>{
+      const input=e.target as HTMLInputElement;
+      const value=input.value.trim();
+      if(value!==''&&(!Number.isFinite(Number(value))||Number(value)<0||Number(value)>1e9)){
+        const status=container.querySelector<HTMLElement>('#clover-feedback')!;status.textContent='Enter a valid nonnegative COGS amount, or leave it blank if unknown.';return;
+      }
+      enteredCogs=value;paint();
+    });
+    container.querySelector<HTMLButtonElement>('#clover-clear-cost')?.addEventListener('click',()=>{enteredCogs='';paint();});
     container.querySelector<HTMLButtonElement>('#clover-evidence-template')?.addEventListener('click',()=>{
       const rows=[['Data needed','Matching period','Question unlocked','Source'],['Transaction counts',report?.period||'','Average transaction value','Clover orders / transaction report'],['Cost of goods sold',report?.period||'','Gross margin','Actual costs'],['Operating expenses',report?.period||'','Modeled break-even','Fixed and variable; exclude COGS'],['Product movement and stock',report?.period||'','Inventory intelligence','Item-level sales and on-hand']];
       const csv=rows.map(row=>row.map(cell=>'"'+cell.replace(/"/g,'""')+'"').join(',')).join('\r\n');
@@ -89,7 +104,7 @@ export function renderCloverImport(container:HTMLElement,accountScope:string){
     container.querySelector<HTMLInputElement>('#clover-upload')!.addEventListener('change',async e=>{
       const f=(e.target as HTMLInputElement).files?.[0];if(!f)return;
       const status=container.querySelector<HTMLElement>('#clover-feedback')!;
-      try{if(f.size>500000)throw Error('File exceeds 500 KB.');const parsed=parse(await f.text(),f.name);current=parsed;paint();container.querySelector<HTMLElement>('#clover-feedback')!.textContent='Imported '+parsed.days.length+' reporting days from '+parsed.fileName+'.';}
+      try{if(f.size>500000)throw Error('File exceeds 500 KB.');const parsed=parse(await f.text(),f.name);current=parsed;enteredCogs='';paint();container.querySelector<HTMLElement>('#clover-feedback')!.textContent='Imported '+parsed.days.length+' reporting days from '+parsed.fileName+'.';}
       catch(err){status.textContent=err instanceof Error?err.message:'Could not read Clover report.';}
     });
   };
