@@ -50,6 +50,9 @@ function summarize(rows:Sale[]){
   return {revenue,cogs,transactions,profit,margin,average,operating,breakEven,days:rows.length};
 }
 
+type Page = 'overview' | 'signals' | 'data';
+const getPage = (): Page => location.hash === '#signals' ? 'signals' : location.hash === '#data' ? 'data' : 'overview';
+let activePage: Page = getPage();
 let selectedInsight = 'revenue';
 function render(){
   const s=summarize(sales);
@@ -88,9 +91,13 @@ function render(){
   app.innerHTML=
     '<div class="observatory">'+
       '<aside class="identity-rail"><div class="rail-logo"><img src="/soren-dna.png" alt="Soren DNA mark"/></div>'+
-        '<div class="rail-divider"></div><nav aria-label="Soren sections"><a href="#intelligence" class="rail-link active" aria-label="Intelligence observatory">✧</a><a href="#signals" class="rail-link" aria-label="Business signals">⌁</a><a href="#data" class="rail-link" aria-label="Data sources">▤</a></nav>'+
+        '<div class="rail-divider"></div><nav aria-label="Soren pages">'+
+          '<button type="button" data-page-link="overview" class="rail-link'+(activePage==='overview'?' active':'')+'" aria-label="Overview" aria-current="'+(activePage==='overview'?'page':'false')+'" title="Overview">✧</button>'+
+          '<button type="button" data-page-link="signals" class="rail-link'+(activePage==='signals'?' active':'')+'" aria-label="Business signals" aria-current="'+(activePage==='signals'?'page':'false')+'" title="Business signals">⌁</button>'+
+          '<button type="button" data-page-link="data" class="rail-link'+(activePage==='data'?' active':'')+'" aria-label="Data sources" aria-current="'+(activePage==='data'?'page':'false')+'" title="Data sources">▤</button>'+
+          '</nav>'+
         '<div class="rail-bottom"><span class="rail-pulse"></span><span>01</span></div></aside>'+
-      '<div class="workspace">'+
+      '<div class="workspace" data-page="'+activePage+'">'+
         '<div class="topline"><div class="wordmark">SOREN <span> / INTELLIGENCE WITH INTENTION</span></div><div class="top-meta"><span>WORKSPACE 001</span><span class="sep"></span><span class="demo-led">● SYNTHETIC DEMO · AI DISABLED</span></div></div>'+
         '<div class="hero-line"><div><p class="eyebrow">GOOD TO SEE YOU, PARTNER.</p><h1>Let’s find the <em>signal</em><br/>inside the noise.</h1></div><p class="hero-copy">Your business is a living system. Every figure is connected. Select a signal and follow the evidence.</p></div>'+
         '<div class="stage" id="intelligence"><section class="orbit-scene" aria-label="Interactive business intelligence map">'+
@@ -114,6 +121,14 @@ function render(){
         '<section class="data-deck" id="data"><div class="data-heading"><span class="section-index">03 / DATA CONTROL</span><h2>Give me the right evidence.</h2><p>Import your own authorized CSV, or keep exploring the synthetic sample. Your file is processed locally.</p></div><div class="data-controls"><div><label for="fixed">FIXED EXPENSES / SAME PERIOD ($)</label><input id="fixed" type="number" min="0" step="1" value="'+fixedCosts+'"/><small>COGS is already accounted for. Other costs may be absent.</small></div><label class="import-button">IMPORT CSV ↑<input id="file" type="file" accept=".csv,text/csv" hidden/></label><button id="reset" class="reset-button">RESET SAMPLE ↺</button></div><p class="schema">CSV FORMAT: <code>date,revenue,transactions,cogs</code></p></section>'+
         '<footer>© SOREN / PROTOTYPE 0.2 <span>INTELLIGENCE WITH INTENTION · META AI CURRENTLY DISABLED</span></footer>'+
       '</div></div>';
+  document.querySelectorAll<HTMLButtonElement>('[data-page-link]').forEach(button => button.addEventListener('click', () => {
+    const page = button.dataset.pageLink as Page;
+    if (page === activePage) return;
+    activePage = page;
+    history.pushState({page}, '', '#'+page);
+    render();
+    window.scrollTo(0,0);
+  }));
   document.querySelectorAll<HTMLButtonElement>('[data-focus]').forEach(button=>button.addEventListener('click',()=>{
     selectedInsight=button.dataset.focus||'revenue';render();
   }));
@@ -134,4 +149,5 @@ function render(){
   core.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); beginConversation(); } });
   addAccountToolbar();
 }
+window.addEventListener('popstate', () => { activePage = getPage(); render(); window.scrollTo(0,0); });
 initAuth(app, render);
