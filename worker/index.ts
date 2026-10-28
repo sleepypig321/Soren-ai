@@ -10,6 +10,7 @@ type Env = {
   MODEL_API_KEY?: string;
   AI_ENABLED?: string;
   AI_BUDGET_DB?: D1Binding;
+  AI_TEST_LIMIT?: string;
 };
 type ChatLine = { role: 'user' | 'assistant'; content: string };
 const SUPABASE_URL = 'https://oclhhrnlltocibkuinie.supabase.co';
@@ -66,13 +67,17 @@ async function chat(request: Request, env: Env): Promise<Response> {
   try {
     if (!(await validateUser(request))) return json({error:'Please sign in again.'},401);
   } catch { return json({error:'Authentication could not be verified. No credits spent.'},503); }
+  const testLimit = Number(env.AI_TEST_LIMIT);
+  if (!Number.isInteger(testLimit) || testLimit < 1 || testLimit > 2) {
+    return json({error:'Live AI test limit is not configured safely. No request sent.'},503);
+  }
   let reservation: D1Row | null;
   try {
     // Atomic conditional UPDATE: at most 500 reservations against the $100 internal allowance.
     // Reservation is intentionally NOT refunded on provider failure (fail-safe counting).
     reservation = await env.AI_BUDGET_DB.prepare(
-      'UPDATE ai_budget SET remaining_cents = remaining_cents - 20, requests_approved = requests_approved + 1, updated_at = CURRENT_TIMESTAMP WHERE id = 1 AND remaining_cents >= 20 RETURNING remaining_cents'
-    ).first<D1Row>();
+      'UPDATE ai_budget SET remaining_cents = remaining_cents - 20, requests_approved = requests_approved + 1, updated_at = CURRENT_TIMESTAMP WHERE id = 1 AND remaining_cents >= 20 AND requests_approved < ? RETURNING remaining_cents'
+    ).bind(testLimit).first<D1Row>();
   } catch { return json({error:'AI budget ledger unavailable. No request sent.'},503); }
   if (!reservation) return json({error:'Soren has reached the shared AI usage allowance. No request sent.'},429);
   const messages = [
