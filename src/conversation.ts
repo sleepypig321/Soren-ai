@@ -154,7 +154,7 @@ export async function openSorenConversation(facts:Summary,source:string) {
               'Previously tried: '+dna.existing_attempts,
               'Preferred tone: '+dna.communication_style
             ];
-            dnaContext=parts.map(v=>v.slice(0,500));
+            dnaContext=[parts.slice(0,4).join(' | ').slice(0,500),parts.slice(4).join(' | ').slice(0,500)];
           }
         }
         const res=await fetch('/api/chat',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+session.access_token},body:JSON.stringify({question,facts,history:prior,memories:[...dnaContext,...notes.map(note=>note.note)].slice(0,8)})});
