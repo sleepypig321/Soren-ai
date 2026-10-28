@@ -394,3 +394,46 @@ img,svg{max-width:100%}
 .clover-retention span{font-size:.73rem;color:#a6f5d7;letter-spacing:.07em;font-weight:750}
 .clover-retention button{font-size:.76rem;max-width:100%;white-space:normal}
 @media(max-width:540px){.clover-retention{align-items:stretch}.clover-retention button{width:100%}}
+
+/* Data Sources v2: one clear Clover-first workflow, never sideways panels. */
+.workspace[data-page="data"] .data-deck{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;width:100%;max-width:100%;min-width:0;gap:0;padding:clamp(26px,5vw,60px) 0 50px}
+.workspace[data-page="data"] .data-heading{width:100%;max-width:850px;padding:0 0 20px}
+.workspace[data-page="data"] .data-heading h2{font-size:clamp(29px,4vw,50px);line-height:1.12;max-width:760px}
+.workspace[data-page="data"] .data-heading h2 em{font-style:normal;background:linear-gradient(90deg,#a1d5ff,#c7a6ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.workspace[data-page="data"] .data-heading p{font-size:clamp(13px,1.4vw,15px);max-width:680px;color:#b2c5e5}
+.data-journey{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0 25px;max-width:890px}
+.data-journey>div{display:flex;align-items:center;gap:10px;min-width:0;padding:12px;border-radius:12px;border:1px solid rgba(134,172,239,.26);background:rgba(25,43,83,.34)}
+.data-journey span{display:grid;place-items:center;flex:none;width:30px;height:30px;border-radius:50%;background:rgba(143,169,255,.18);color:#bdd8ff;font-size:11px}
+.data-journey strong{color:#e5edff;font-size:11px;letter-spacing:.08em}
+.data-journey small{color:#91a7cd;font-size:10px;line-height:1.3}
+.workspace[data-page="data"] .clover-import{width:100%;margin:0;padding:0;border-top:0}
+.workspace[data-page="data"] .clover-heading{align-items:center;gap:20px;border:1px solid rgba(129,174,247,.38);border-radius:19px;padding:clamp(17px,3vw,27px);background:linear-gradient(130deg,rgba(19,42,85,.76),rgba(43,31,83,.52))}
+.workspace[data-page="data"] .clover-heading h3{font-size:clamp(22px,2.6vw,30px);margin:8px 0}
+.workspace[data-page="data"] .clover-heading p{margin:6px 0 0;max-width:550px}
+.workspace[data-page="data"] .clover-heading .import-button{white-space:normal;text-align:center;line-height:1.5;border-radius:11px;box-shadow:0 6px 24px rgba(112,140,255,.18)}
+.workspace[data-page="data"] .clover-feedback{margin:12px 0}
+.workspace[data-page="data"] .clover-summary{margin:16px 0}
+.workspace[data-page="data"] .clover-summary>div{border-radius:12px;padding:19px;background:linear-gradient(130deg,rgba(29,50,98,.85),rgba(17,33,69,.8))}
+.workspace[data-page="data"] .clover-daily-chart{border-radius:13px;overflow:hidden}
+.data-disclosure,.financial-advanced{width:100%;min-width:0;margin-top:13px;border:1px solid rgba(130,169,240,.28);border-radius:15px;background:rgba(17,31,65,.55);overflow:hidden}
+.data-disclosure>summary,.financial-advanced>summary{list-style:none;cursor:pointer;display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;position:relative;padding:17px 54px 17px 20px}
+.data-disclosure>summary::-webkit-details-marker,.financial-advanced>summary::-webkit-details-marker{display:none}
+.data-disclosure>summary::after,.financial-advanced>summary::after{content:"+";position:absolute;right:18px;top:50%;transform:translateY(-50%);color:#afd8ff;font-size:24px;font-weight:300}
+.data-disclosure[open]>summary::after,.financial-advanced[open]>summary::after{content:"−"}
+.data-disclosure>summary:hover,.financial-advanced>summary:hover{background:rgba(116,145,230,.1)}
+.data-disclosure>summary>span,.financial-advanced>summary>span{flex:0 0 100%;color:#91b5f4;font-size:9px;letter-spacing:.12em;font-weight:800}
+.data-disclosure>summary>strong,.financial-advanced>summary>strong{font-size:clamp(14px,1.7vw,18px);color:#e8efff}
+.data-disclosure>summary>small,.financial-advanced>summary>small{font-size:11px;color:#96add0}
+.data-disclosure>section,.data-disclosure>.clover-table-wrap{margin:0 14px 15px;border-radius:12px}
+.data-disclosure>summary:focus-visible,.financial-advanced>summary:focus-visible{outline:2px solid #b7cfff;outline-offset:-3px}
+.workspace[data-page="data"] .clover-investigator{padding:18px;border:0;background:transparent}
+.workspace[data-page="data"] .clover-profit-model{border:0;background:transparent;padding:19px}
+.workspace[data-page="data"] .clover-evidence{border:0;background:transparent;padding:19px}
+.financial-advanced{margin-top:28px;background:rgba(15,28,60,.35)}
+.financial-advanced-content{padding:0 20px 20px}
+.financial-advanced-content>p{color:#a9bfdf;font-size:12px;line-height:1.6}
+.financial-advanced-content .data-controls{display:flex;flex-wrap:wrap;align-items:end;gap:14px;margin:17px 0}
+.financial-advanced-content .data-controls>div{max-width:100%}
+.financial-advanced-content .schema{margin:14px 0 0;line-height:1.6;overflow-wrap:anywhere}
+@media(max-width:850px){.data-journey{grid-template-columns:1fr 1fr 1fr}.data-journey>div{display:block}.data-journey span{margin-bottom:8px}.data-journey small{display:block;margin-top:3px}}
+@media(max-width:650px){.data-journey{gap:6px}.data-journey>div{padding:9px}.data-journey span{width:25px;height:25px;font-size:10px}.data-journey strong{font-size:9px}.data-journey small{font-size:9px}.workspace[data-page="data"] .clover-heading{flex-direction:column;align-items:stretch}.workspace[data-page="data"] .clover-heading .import-button{width:100%}.data-disclosure>summary,.financial-advanced>summary{padding:14px 43px 14px 14px}.data-disclosure>section,.data-disclosure>.clover-table-wrap{margin:0 8px 10px}.clover-retention{margin-top:15px}}
