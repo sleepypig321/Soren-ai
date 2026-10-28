@@ -97,14 +97,64 @@ export function addAccountToolbar() {
   panel.querySelector<HTMLSelectElement>('#business-select')!.addEventListener('change', e => {
     currentBusinessId = (e.target as HTMLSelectElement).value || null;
   });
-  panel.querySelector('#add-business')!.addEventListener('click', async () => {
-    const name = prompt('Name your business workspace:')?.trim();
-    if (!name) return;
-    if (name.length > 120) { alert('Business name must be 120 characters or less.'); return; }
-    const { data, error } = await supabase.from('businesses').insert({ owner_id: currentUser!.id, name }).select('id').single();
-    if (error) { alert(error.message); return; }
-    currentBusinessId = data.id;
-    await showAuthenticated();
+  panel.querySelector('#add-business')!.addEventListener('click', () => {
+    const backdrop = document.createElement('div');
+    backdrop.className = 'workspace-modal-backdrop';
+    backdrop.innerHTML = `<section class="workspace-modal" role="dialog" aria-modal="true" aria-labelledby="workspace-modal-title" aria-describedby="workspace-modal-description">
+      <button class="workspace-modal-close" type="button" aria-label="Close workspace dialog">×</button>
+      <div class="workspace-modal-identity"><img src="/soren-dna.png" alt=""/><span>SOREN / WORKSPACE GENESIS</span></div>
+      <p class="workspace-modal-step">01 / NEW BUSINESS</p>
+      <h2 id="workspace-modal-title">Give your vision<br/><em>a home.</em></h2>
+      <p id="workspace-modal-description">Create a private command center for your business. Your intelligence begins here.</p>
+      <form id="workspace-modal-form">
+        <label for="workspace-business-name">BUSINESS NAME</label>
+        <input id="workspace-business-name" name="name" type="text" maxlength="120" autocomplete="organization" required placeholder="e.g. The Vault Lifestyle & Wellness"/>
+        <p class="workspace-modal-hint">Only you can access this workspace.</p>
+        <p class="workspace-modal-error" role="alert" aria-live="polite"></p>
+        <div class="workspace-modal-actions"><button type="button" class="workspace-modal-cancel">CANCEL</button><button type="submit" class="workspace-modal-create">CREATE WORKSPACE ↗</button></div>
+      </form>
+    </section>`;
+    document.body.appendChild(backdrop);
+    const input = backdrop.querySelector<HTMLInputElement>('#workspace-business-name')!;
+    const form = backdrop.querySelector<HTMLFormElement>('#workspace-modal-form')!;
+    const create = backdrop.querySelector<HTMLButtonElement>('.workspace-modal-create')!;
+    const errorText = backdrop.querySelector<HTMLElement>('.workspace-modal-error')!;
+    const close = () => { document.removeEventListener('keydown', onKeydown); backdrop.remove(); };
+    const onKeydown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !create.disabled) close();
+      if (event.key === 'Tab') {
+        const controls = [...backdrop.querySelectorAll<HTMLElement>('button,input')].filter(el => !el.hasAttribute('disabled'));
+        const first = controls[0], last = controls[controls.length - 1];
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+      }
+    };
+    document.addEventListener('keydown', onKeydown);
+    backdrop.querySelector('.workspace-modal-close')!.addEventListener('click', close);
+    backdrop.querySelector('.workspace-modal-cancel')!.addEventListener('click', close);
+    backdrop.addEventListener('click', event => { if (event.target === backdrop && !create.disabled) close(); });
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      const name = input.value.trim();
+      if (!name || name.length > 120) { errorText.textContent = 'Enter a business name (1–120 characters).'; input.focus(); return; }
+      if (!currentUser) { errorText.textContent = 'Your session expired. Please sign in again.'; return; }
+      create.disabled = true;
+      create.textContent = 'CREATING YOUR SPACE…';
+      errorText.textContent = '';
+      try {
+        const { data, error } = await supabase.from('businesses').insert({ owner_id: currentUser.id, name }).select('id').single();
+        if (error) throw error;
+        currentBusinessId = data.id;
+        close();
+        await showAuthenticated();
+      } catch (error) {
+        errorText.textContent = error instanceof Error ? error.message : 'Could not create workspace. Please try again.';
+      } finally {
+        create.disabled = false;
+        create.textContent = 'CREATE WORKSPACE ↗';
+      }
+    });
+    input.focus();
   });
   panel.querySelector('#sign-out')!.addEventListener('click', async () => {
     const { error } = await supabase.auth.signOut();
