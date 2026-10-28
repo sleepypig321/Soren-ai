@@ -388,3 +388,9 @@ img,svg{max-width:100%}
 .clover-investigator-voice p{margin:8px 0 0;color:#e5eaff;line-height:1.6}
 .clover-investigator-limit{font-size:.8rem;margin-bottom:0}
 @media(max-width:950px){.clover-investigator-grid{grid-template-columns:minmax(0,1fr)}}
+
+/* Private per-browser import retention controls */
+.clover-retention{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:11px 15px;margin:12px 0;border-radius:12px;border:1px solid rgba(123,217,186,.3);background:rgba(13,57,55,.28)}
+.clover-retention span{font-size:.73rem;color:#a6f5d7;letter-spacing:.07em;font-weight:750}
+.clover-retention button{font-size:.76rem;max-width:100%;white-space:normal}
+@media(max-width:540px){.clover-retention{align-items:stretch}.clover-retention button{width:100%}}
