@@ -103,3 +103,28 @@
 @keyframes workspace-shade{from{opacity:0}to{opacity:1}}
 @media(max-width:480px){.workspace-modal-actions{flex-direction:column-reverse}.workspace-modal-actions button{width:100%}}
 @media(prefers-reduced-motion:reduce){.workspace-modal-backdrop{animation:none}}
+
+/* Soren's native conversation channel */
+#soren-core{cursor:pointer}#soren-core:focus-visible{outline:2px solid #a4d7ff;outline-offset:7px;border-radius:50%}
+.soren-conversation-backdrop{position:fixed;z-index:10000;inset:0;display:flex;align-items:stretch;justify-content:flex-end;background:#010611c4;backdrop-filter:blur(9px)}
+.soren-conversation{width:min(100%,550px);height:100%;display:flex;flex-direction:column;box-sizing:border-box;background:radial-gradient(circle at 50% 0,#39366e67,transparent 40%),linear-gradient(160deg,#142143,#070e24);border-left:1px solid #89a7ec83;box-shadow:-30px 0 120px #050c2cba;color:#f1f5ff}
+.soren-conversation-head{display:flex;align-items:center;gap:13px;padding:28px 24px 22px;border-bottom:1px solid #6c86bd52}
+.soren-conversation-head img{width:76px;height:76px;object-fit:contain;filter:drop-shadow(0 0 19px #668dffbb)}
+.soren-conversation-head p{font-size:10px;letter-spacing:.17em;color:#9cbcf1;font-weight:800;margin:0 0 9px}
+.soren-conversation-head h2{font-size:clamp(22px,3vw,30px);letter-spacing:-.04em;font-weight:500;margin:0}
+.soren-conversation-close{align-self:flex-start;margin-left:auto;border:1px solid #7792ca70;background:transparent;color:#b8cef4;font-size:25px;line-height:1;cursor:pointer;width:36px;height:36px}
+.soren-conversation-context{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:14px 24px;font-size:9px;letter-spacing:.11em;color:#8da7ce;border-bottom:1px solid #6c86bd39}
+.soren-conversation-dot{height:6px;width:6px;background:#7edbd5;border-radius:50%;box-shadow:0 0 12px #80f9df}
+.soren-conversation-messages{flex:1;overflow-y:auto;padding:28px 25px;display:flex;flex-direction:column;gap:21px}
+.soren-line{max-width:93%;padding:18px 20px;border:1px solid #718bc348;background:#1b2c4b80}
+.soren-line.soren{align-self:flex-start;border-left:2px solid #ad9bff;background:linear-gradient(120deg,#1a2d55b5,#1d1741a8)}
+.soren-line.user{align-self:flex-end;background:#273c5dbb;border-right:2px solid #8ac9ff}
+.soren-line>span{display:block;color:#adc9ff;font-size:9px;font-weight:800;letter-spacing:.18em;margin-bottom:10px}
+.soren-line p{font-size:13px;line-height:1.75;white-space:pre-wrap;margin:0}
+.soren-conversation-form{margin:0 25px}.soren-conversation-form label{display:block;color:#a9c5fa;font-size:10px;font-weight:800;letter-spacing:.16em;margin:10px 0}
+.soren-compose{display:flex;align-items:stretch;border:1px solid #829ed591;background:#0b1934}
+.soren-compose textarea{flex:1;min-width:0;resize:vertical;max-height:170px;padding:14px;border:0;background:transparent;outline:0;color:#f1f5ff;font-size:13px;line-height:1.55;font-family:inherit}
+.soren-compose textarea::placeholder{color:#7792b9}
+.soren-compose button{width:55px;font-size:27px;font-weight:700;color:#07162e;border:0;background:linear-gradient(150deg,#8ed4ff,#b9a1ff);cursor:pointer}
+.soren-conversation-note{margin:12px 25px 24px;color:#819bc3;font-size:10px;line-height:1.6}
+@media(max-width:600px){.soren-conversation-head{padding:18px 14px}.soren-conversation-head img{width:60px;height:60px}.soren-conversation-messages{padding:17px 13px}.soren-conversation-form{margin:0 13px}.soren-conversation-note{margin:10px 13px 16px}}
