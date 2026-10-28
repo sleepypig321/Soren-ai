@@ -9,6 +9,8 @@ let currentUser: User | null = null;
 let currentBusinessId: string | null = null;
 type Business = { id: string; name: string };
 let businesses: Business[] = [];
+export const getActiveBusinessId = () => currentBusinessId;
+export const getActiveBusinessName = () => businesses.find(b => b.id === currentBusinessId)?.name ?? 'Personal workspace';
 let dashboard: (() => void) | null = null;
 let root: HTMLDivElement;
 const escapeText = (s: string) => s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
@@ -96,6 +98,7 @@ export function addAccountToolbar() {
   topline.insertAdjacentElement('afterend', panel);
   panel.querySelector<HTMLSelectElement>('#business-select')!.addEventListener('change', e => {
     currentBusinessId = (e.target as HTMLSelectElement).value || null;
+    window.dispatchEvent(new Event('soren:business-changed'));
   });
   panel.querySelector('#add-business')!.addEventListener('click', () => {
     const backdrop = document.createElement('div');
@@ -145,6 +148,7 @@ export function addAccountToolbar() {
         const { data, error } = await supabase.from('businesses').insert({ owner_id: currentUser.id, name }).select('id').single();
         if (error) throw error;
         currentBusinessId = data.id;
+        window.dispatchEvent(new Event('soren:business-changed'));
         close();
         await showAuthenticated();
       } catch (error) {
@@ -167,6 +171,7 @@ export function initAuth(element: HTMLDivElement, renderDashboard: () => void) {
   root.innerHTML = '<div class="auth-loading">SOREN / VERIFYING ACCESS…</div>';
   supabase.auth.onAuthStateChange((_event, session) => {
     currentUser = session?.user ?? null;
+    window.dispatchEvent(new Event('soren:auth-changed'));
     if (currentUser) void showAuthenticated();
     else authScreen();
   });
