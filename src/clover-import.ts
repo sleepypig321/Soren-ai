@@ -1,3 +1,4 @@
+import { loadCloudImport, saveCloudImport, removeCloudImport, canSyncImports } from './import-sync';
 type Day={date:string;net:number;gross:number|null;discount:number|null};
 type CloverReport={days:Day[];reportedNet:number;period:string;fileName:string};
 let current:CloverReport|null=null;
@@ -81,7 +82,7 @@ export function renderCloverImport(container:HTMLElement,accountScope:string){
   }
   const paint=()=>{
     const report=current;
-    container.innerHTML='<div class="clover-heading"><div><span class="section-index">CLOVER / RETAIL DATA BRIDGE</span><h3>Bring your sales into the conversation.</h3><p>Upload Clover’s Daily Sales Report CSV without rearranging columns. Imported data is saved in this browser for this account and business; it is not synced across devices or committed to the public repository. Avoid shared computers.</p></div><label class="import-button">IMPORT CLOVER DAILY CSV ↑<input id="clover-upload" type="file" accept=".csv,text/csv" hidden/></label></div><p id="clover-feedback" class="clover-feedback" role="status"></p><div class="clover-results"></div>';
+    container.innerHTML='<div class="clover-heading"><div><span class="section-index">CLOVER / RETAIL DATA BRIDGE</span><h3>Bring your sales into the conversation.</h3><p>Upload Clover’s Daily Sales Report CSV without rearranging columns. Authorized imports are saved in this browser and sync privately to your selected business when online. On shared devices, remove the local copy after use. Nothing is committed to the public repository.</p></div><label class="import-button">IMPORT CLOVER DAILY CSV ↑<input id="clover-upload" type="file" accept=".csv,text/csv" hidden/></label></div><p id="clover-feedback" class="clover-feedback" role="status"></p><div class="clover-results"></div>';
     const results=container.querySelector<HTMLElement>('.clover-results')!;
     if(report){
       const days=report.days;
@@ -104,7 +105,7 @@ export function renderCloverImport(container:HTMLElement,accountScope:string){
       const cogs=cogsProvided?Number(enteredCogs):null;
       const grossProfit=cogs===null?null:report.reportedNet-cogs;
       const grossMargin=grossProfit!==null&&report.reportedNet!==0?grossProfit/report.reportedNet*100:null;
-      results.innerHTML='<div class="clover-retention"><span>● STORED ON THIS DEVICE / THIS WORKSPACE</span><button type="button" class="reset-button" id="clover-forget">REMOVE SAVED IMPORT</button></div><div class="clover-summary"><div><span>RECONCILED NET SALES</span><strong>'+money(report.reportedNet)+'</strong></div><div><span>REPORTING DAYS</span><strong>'+days.length+'</strong></div><div><span>LAST 7 VS PRIOR 7</span><strong>'+(variation===null?'N/A':(variation>=0?'+':'')+variation.toFixed(1)+'%')+'</strong></div></div>'+
+      results.innerHTML='<div class="clover-retention"><span>● DEVICE COPY / PRIVATE CLOUD SYNC WHEN AVAILABLE</span><button type="button" class="reset-button" id="clover-forget">REMOVE SAVED IMPORT</button></div><div class="clover-summary"><div><span>RECONCILED NET SALES</span><strong>'+money(report.reportedNet)+'</strong></div><div><span>REPORTING DAYS</span><strong>'+days.length+'</strong></div><div><span>LAST 7 VS PRIOR 7</span><strong>'+(variation===null?'N/A':(variation>=0?'+':'')+variation.toFixed(1)+'%')+'</strong></div></div>'+
         '<p class="clover-reconcile">✓ Sum of daily figures reconciles to the Clover report total. '+(last.date===today?'The current date is excluded from the seven-day comparison because it may be incomplete.':'Seven-day comparisons assume all reported days are complete.')+'</p>'+
         '<div class="clover-daily-chart" role="img" aria-label="Clover daily net sales bars">'+days.map(d=>'<div title="'+esc(d.date+': '+money(d.net))+'"><span style="height:'+Math.max(2,Math.max(0,d.net)/max*100)+'%"></span></div>').join('')+'</div>'+
         '<section class="clover-investigator" aria-label="Retail performance investigator"><div class="clover-investigator-top"><span class="section-index">SOREN / RETAIL PERFORMANCE INVESTIGATOR</span><h4>Here’s what caught my attention.</h4><p>Observed patterns from your authorized Clover sales report, not a forecast or a diagnosis.</p></div><div class="clover-investigator-grid">'+
@@ -121,8 +122,13 @@ export function renderCloverImport(container:HTMLElement,accountScope:string){
         '<article class="clover-evidence-item"><span class="clover-evidence-state">NEEDS DATA</span><h5>Product movement & stock</h5><p>Provide item-level sales plus current on-hand quantities.</p><span>UNLOCKS / INVENTORY INTELLIGENCE</span></article></div>'+
         '<div class="clover-evidence-footer"><p><strong>Evidence boundary:</strong> The Clover report does not provide transaction counts, expenses, or inventory. '+(cogsProvided?'COGS is owner-entered, not verified by Clover.':'COGS is also missing.')+' Missing metrics are not zero; the synthetic demo remains separate. Keep private reports out of the public repository.</p><button id="clover-evidence-template" type="button" class="reset-button">DOWNLOAD DATA CHECKLIST ↓</button></div></section>';
     }else results.innerHTML='<p class="clover-empty">Waiting for an authorized Clover daily sales report. No data uploaded yet.</p>';
-    container.querySelector<HTMLButtonElement>('#clover-forget')?.addEventListener('click',()=>{
-      current=null;enteredCogs='';saveCurrent();paint();
+    container.querySelector<HTMLButtonElement>('#clover-forget')?.addEventListener('click',async()=>{
+      const targetScope=scope;
+      try{
+        if(canSyncImports())await removeCloudImport('clover_daily');
+        if(targetScope!==scope)return;
+        current=null;enteredCogs='';saveCurrent();paint();
+      }catch(err){container.querySelector<HTMLElement>('#clover-feedback')!.textContent=err instanceof Error?err.message:'Unable to remove the cloud copy.';}
     });
     container.querySelector<HTMLInputElement>('#clover-cogs')?.addEventListener('change',e=>{
       const input=e.target as HTMLInputElement;
@@ -130,9 +136,9 @@ export function renderCloverImport(container:HTMLElement,accountScope:string){
       if(value!==''&&(!Number.isFinite(Number(value))||Number(value)<0||Number(value)>1e9)){
         const status=container.querySelector<HTMLElement>('#clover-feedback')!;status.textContent='Enter a valid nonnegative COGS amount, or leave it blank if unknown.';return;
       }
-      enteredCogs=value;saveCurrent();paint();
+      enteredCogs=value;saveCurrent();paint();if(current&&canSyncImports()){const targetScope=scope;void saveCloudImport('clover_daily',{report:current,cogs:enteredCogs}).catch(err=>{if(scope===targetScope)container.querySelector<HTMLElement>('#clover-feedback')!.textContent=err.message;});}
     });
-    container.querySelector<HTMLButtonElement>('#clover-clear-cost')?.addEventListener('click',()=>{enteredCogs='';saveCurrent();paint();});
+    container.querySelector<HTMLButtonElement>('#clover-clear-cost')?.addEventListener('click',()=>{enteredCogs='';saveCurrent();paint();if(current&&canSyncImports())void saveCloudImport('clover_daily',{report:current,cogs:enteredCogs}).catch(()=>{});});
     container.querySelector<HTMLButtonElement>('#clover-evidence-template')?.addEventListener('click',()=>{
       const rows=[['Data needed','Matching period','Question unlocked','Source'],['Transaction counts',report?.period||'','Average transaction value','Clover orders / transaction report'],['Cost of goods sold',report?.period||'','Gross margin','Actual costs'],['Operating expenses',report?.period||'','Modeled break-even','Fixed and variable; exclude COGS'],['Product movement and stock',report?.period||'','Inventory intelligence','Item-level sales and on-hand']];
       const csv=rows.map(row=>row.map(cell=>'"'+cell.replace(/"/g,'""')+'"').join(',')).join('\r\n');
@@ -142,9 +148,26 @@ export function renderCloverImport(container:HTMLElement,accountScope:string){
     container.querySelector<HTMLInputElement>('#clover-upload')!.addEventListener('change',async e=>{
       const f=(e.target as HTMLInputElement).files?.[0];if(!f)return;
       const status=container.querySelector<HTMLElement>('#clover-feedback')!;
-      try{if(f.size>500000)throw Error('File exceeds 500 KB.');const parsed=parse(await f.text(),f.name);current=parsed;enteredCogs='';const saved=saveCurrent();paint();if(!saved)container.querySelector<HTMLElement>('#clover-feedback')!.textContent='Imported for this session, but this browser could not save the report. Storage may be disabled or full.';container.querySelector<HTMLElement>('#clover-feedback')!.textContent='Imported '+parsed.days.length+' reporting days from '+parsed.fileName+'.';}
+      try{if(f.size>500000)throw Error('File exceeds 500 KB.');const parsed=parse(await f.text(),f.name);current=parsed;enteredCogs='';const saved=saveCurrent();paint();if(canSyncImports()){const targetScope=scope;void saveCloudImport('clover_daily',{report:parsed,cogs:''}).then(()=>{if(scope===targetScope)container.querySelector<HTMLElement>('#clover-feedback')!.textContent='Clover import saved privately to your business workspace and this browser.';}).catch(err=>{if(scope===targetScope)container.querySelector<HTMLElement>('#clover-feedback')!.textContent=err.message+' Your device copy remains available.';});}if(!saved)container.querySelector<HTMLElement>('#clover-feedback')!.textContent='Imported for this session, but this browser could not save the report. Storage may be disabled or full.';container.querySelector<HTMLElement>('#clover-feedback')!.textContent='Imported '+parsed.days.length+' reporting days from '+parsed.fileName+'.';}
       catch(err){status.textContent=err instanceof Error?err.message:'Could not read Clover report.';}
     });
   };
   paint();
+  if(canSyncImports()){
+    const targetScope=scope;
+    void loadCloudImport('clover_daily').then(async payload=>{
+      if(scope!==targetScope)return;
+      const cloud=payload as {report?:CloverReport;cogs?:string}|null;
+      if(cloud?.report&&Array.isArray(cloud.report.days)&&cloud.report.days.length>0&&cloud.report.days.length<=366&&
+        Number.isFinite(cloud.report.reportedNet)&&cloud.report.days.every(day=>typeof day.date==='string'&&/^\\d{4}-\\d{2}-\\d{2}$/.test(day.date)&&Number.isFinite(day.net))&&
+        Math.abs(sum(cloud.report.days)-cloud.report.reportedNet)<=.02){
+        current=cloud.report;enteredCogs=typeof cloud.cogs==='string'&&(/^(?:|\\d+(?:\\.\\d+)?)$/.test(cloud.cogs))&&Number(cloud.cogs||'0')<=1e9?cloud.cogs:'';
+        saveCurrent();paint();
+        container.querySelector<HTMLElement>('#clover-feedback')!.textContent='Restored from your private business workspace.';
+      }else if(!payload&&current){
+        await saveCloudImport('clover_daily',{report:current,cogs:enteredCogs});
+        if(scope===targetScope)container.querySelector<HTMLElement>('#clover-feedback')!.textContent='Previously saved report synced privately to your business workspace.';
+      }
+    }).catch(err=>{if(scope===targetScope)container.querySelector<HTMLElement>('#clover-feedback')!.textContent=err instanceof Error?err.message:'Cloud sync unavailable; local copy remains.';});
+  }
 }
