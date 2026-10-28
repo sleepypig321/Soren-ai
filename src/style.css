@@ -372,3 +372,19 @@ img,svg{max-width:100%}
 .clover-profit-model .clover-profit-pending{font-weight:700;color:#d6b0ff;margin-bottom:0}
 .clover-profit-model .clover-profit-caution{font-size:.82rem;margin-bottom:0}
 @media(max-width:540px){.clover-profit-results{grid-template-columns:minmax(0,1fr)}.clover-profit-entry input{max-width:none}.clover-profit-entry button{flex:0 0 auto}}
+
+/* Cost-independent retail performance investigator */
+.clover-investigator{margin:24px 0;padding:clamp(17px,2.8vw,30px);min-width:0;border-radius:22px;border:1px solid rgba(145,190,255,.38);background:radial-gradient(circle at 90% 0%,rgba(112,74,208,.2),transparent 50%),linear-gradient(145deg,rgba(11,29,68,.88),rgba(15,21,55,.85))}
+.clover-investigator-top h4{color:#f0f4ff;margin:10px 0;font-size:clamp(1.2rem,2.4vw,1.7rem)}
+.clover-investigator-top p,.clover-investigator-limit{color:#b8c8e7;line-height:1.55}
+.clover-investigator-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:22px 0}
+.clover-investigator-grid article{min-width:0;border:1px solid rgba(144,179,249,.2);border-radius:15px;padding:17px;background:rgba(5,14,38,.44)}
+.clover-investigator-grid article>span{font-size:.69rem;font-weight:700;letter-spacing:.08em;color:#a9c7fb}
+.clover-investigator-grid strong{display:block;margin:12px 0;font-size:clamp(1rem,2.1vw,1.35rem);color:#f5f1ff;overflow-wrap:anywhere}
+.clover-investigator-grid p,.clover-investigator-grid small{color:#c3cdea;line-height:1.5;font-size:.86rem}
+.clover-investigator-grid small{opacity:.75}
+.clover-investigator-voice{border-left:3px solid #aab9ff;padding:13px 18px;border-radius:0 12px 12px 0;background:linear-gradient(90deg,rgba(57,86,151,.3),rgba(105,54,151,.14))}
+.clover-investigator-voice span{font-size:.7rem;letter-spacing:.12em;font-weight:800;color:#acd7ff}
+.clover-investigator-voice p{margin:8px 0 0;color:#e5eaff;line-height:1.6}
+.clover-investigator-limit{font-size:.8rem;margin-bottom:0}
+@media(max-width:950px){.clover-investigator-grid{grid-template-columns:minmax(0,1fr)}}
