@@ -47,6 +47,7 @@ export async function openSorenConversation(facts:Summary,source:string) {
   if(activePanel)return;
   const {data:{user},error:userError}=await supabase.auth.getUser();
   if(userError||!user){alert('Please sign in to speak with Soren.');return;}
+  const userId=user.id;
   const businessId=getActiveBusinessId();
   const businessName=getActiveBusinessName();
   const overlay=document.createElement('div');
@@ -83,7 +84,7 @@ export async function openSorenConversation(facts:Summary,source:string) {
   document.addEventListener('keydown',onKey);
   overlay.querySelector('.soren-conversation-close')!.addEventListener('click',close);
   overlay.addEventListener('click',e=>{if(e.target===overlay)close();});
-  const onAuthChanged=()=>{void supabase.auth.getUser().then(({data})=>{if(!data.user||data.user.id!==user.id)close();});};
+  const onAuthChanged=()=>{void supabase.auth.getUser().then(({data})=>{if(!data.user||data.userId!==userId)close();});};
   window.addEventListener('soren:auth-changed',onAuthChanged);
   function draw() {
     const visible:Line[]=[{role:'soren',text:"Good to see you, partner. What's on your mind?"},...lines];
@@ -96,7 +97,7 @@ export async function openSorenConversation(facts:Summary,source:string) {
     memoryItems.querySelectorAll<HTMLButtonElement>('[data-forget]').forEach(button=>button.addEventListener('click',async()=>{
       const id=button.dataset.forget!;
       button.disabled=true;
-      const {error}=await supabase.from('business_memories').delete().eq('id',id).eq('user_id',user.id);
+      const {error}=await supabase.from('business_memories').delete().eq('id',id).eq('user_id',userId);
       if(error){button.disabled=false;button.textContent='RETRY';return;}
       notes=notes.filter(note=>note.id!==id);drawMemories();
     }));
@@ -104,7 +105,7 @@ export async function openSorenConversation(facts:Summary,source:string) {
   overlay.querySelector('.soren-memory-toggle')!.addEventListener('click',()=>{memoryList.hidden=!memoryList.hidden;});
   messages.innerHTML='<div class="soren-history-loading">Retrieving your private conversation…</div>';
   try{
-    [lines,notes]=await Promise.all([fetchHistory(user.id,businessId),fetchMemories(user.id,businessId)]);
+    [lines,notes]=await Promise.all([fetchHistory(userId,businessId),fetchMemories(userId,businessId)]);
     if(closed)return;draw();drawMemories();
   }catch(error){
     if(closed)return;
@@ -120,14 +121,14 @@ export async function openSorenConversation(facts:Summary,source:string) {
     const prior=lines.slice(-6).map(line=>({role:line.role==='soren'?'assistant':'user',content:line.text.slice(0,900)}));
     lines.push(userLine);draw();
     try{
-      await saveLine(user.id,businessId,userLine);
+      await saveLine(userId,businessId,userLine);
       let reply:string;
       if(/^remember\s*:/i.test(question)){
         const note=question.replace(/^remember\s*:/i,'').trim();
         if(!businessId)reply='Create or select a business workspace first, then I can remember facts specifically for that business.';
         else if(!note||note.length>500)reply='Keep a memory between 1 and 500 characters, partner.';
         else{
-          const {data,error}=await supabase.from('business_memories').insert({user_id:user.id,business_id:businessId,note}).select('id,note').single();
+          const {data,error}=await supabase.from('business_memories').insert({user_id:userId,business_id:businessId,note}).select('id,note').single();
           if(error)throw error;
           notes.unshift(data as Memory);drawMemories();
           reply='Noted. I saved that to '+businessName+' memory. You can review or delete it any time.';
@@ -143,7 +144,7 @@ export async function openSorenConversation(facts:Summary,source:string) {
       }
       const line:Line={role:'soren',text:reply};
       lines.push(line);draw();
-      await saveLine(user.id,businessId,line);
+      await saveLine(userId,businessId,line);
     }catch(error){
       lines.push({role:'soren',text:'I couldn’t save or retrieve that message securely. '+(error instanceof Error?error.message:'Please try again.')});
       draw();
