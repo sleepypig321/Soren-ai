@@ -1,5 +1,5 @@
 import './style.css';
-import { openSorenConversation } from './conversation';
+import { openSorenConversation, attachSorenLauncher } from './conversation';
 import { initAuth, addAccountToolbar } from './auth';
 
 type Sale = { date: string; revenue: number; transactions: number; cogs: number };
@@ -148,6 +148,7 @@ function render(){
   core.addEventListener('click', beginConversation);
   core.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); beginConversation(); } });
   addAccountToolbar();
+  attachSorenLauncher(app,s,source);
 }
 window.addEventListener('popstate', () => { activePage = getPage(); render(); window.scrollTo(0,0); });
 initAuth(app, render);
