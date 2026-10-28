@@ -1,94 +1,152 @@
-import { supabase } from './auth';
+import { supabase, getActiveBusinessId, getActiveBusinessName } from './auth';
 
-type Summary = {
-  revenue: number;
-  profit: number;
-  margin: number;
-  transactions: number;
-  average: number;
-  operating: number;
-  days: number;
-  breakEven: number | null;
-};
-type Line = { role: 'user' | 'soren'; text: string };
-const history: Line[] = [];
-const money = (value: number) => new Intl.NumberFormat('en-US', {style:'currency',currency:'USD',maximumFractionDigits:0}).format(value);
-const escape = (value: string) => value.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
-let activePanel: HTMLElement | null = null;
+type Summary = { revenue:number; profit:number; margin:number; transactions:number; average:number; operating:number; days:number; breakEven:number|null };
+type Line = { role:'user'|'soren'; text:string };
+type Memory = { id:string; note:string };
+const money=(n:number)=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(n);
+const escape=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
+let activePanel:HTMLElement|null=null;
+let teardown:(()=>void)|null=null;
 
-function localPreview(question: string, facts: Summary): string {
-  const q = question.toLowerCase();
-  if (/break.?even|profit|loss|cost|expense|margin/.test(q)) {
-    return `Here's what we actually know: ${money(facts.revenue)} in recorded revenue, ${money(facts.profit)} gross profit (${facts.margin.toFixed(1)}% margin), and a modeled operating result of ${money(facts.operating)} after the fixed expenses you entered. ${facts.breakEven === null ? 'We cannot calculate break-even revenue at this margin.' : 'Modeled break-even revenue is '+money(facts.breakEven)+'.'} That does NOT include unlisted costs. First question: which additional expenses are missing?`;
-  }
-  if (/sales|revenue|traffic|growth|customer|transaction/.test(q)) {
-    return `We've recorded ${facts.transactions} transactions over ${facts.days} reporting days, totaling ${money(facts.revenue)} in revenue. Average transaction value: ${money(facts.average)}. Notice what I didn't say: *why* it happened. We need foot traffic, conversion, stock availability, or repeat-customer data to establish causes. Which one can you measure?`;
-  }
-  return `I can start with the evidence we have: ${money(facts.revenue)} in revenue over ${facts.days} reporting days and ${facts.margin.toFixed(1)}% gross margin. I'm in local preview mode, so I'm not going to pretend I can conduct a full AI investigation yet. Ask me about sales, margins, or break-even—or wait until our Meta connection is safely enabled.`;
+function preview(q:string,f:Summary):string {
+  if(/break.?even|profit|loss|cost|expense|margin/i.test(q))
+    return 'Evidence first: '+money(f.revenue)+' revenue, '+money(f.profit)+' gross profit ('+f.margin.toFixed(1)+'%), and '+money(f.operating)+' modeled operating result. Other operating expenses may be missing. What additional costs should we account for?';
+  if(/sales|revenue|traffic|growth|customer|transaction/i.test(q))
+    return 'We have '+f.transactions+' recorded transactions across '+f.days+' days, '+money(f.revenue)+' revenue, and '+money(f.average)+' average transaction value. None of those figures alone explains *why* sales changed. Do you have foot traffic or out-of-stock records?';
+  return 'I can work with the facts in front of me, but the full Meta model is still in gated testing. We have '+money(f.revenue)+' recorded revenue and '+f.margin.toFixed(1)+'% gross margin. Ask me a focused question, or use “Remember: ...” to save a business fact.';
 }
-
-export function openSorenConversation(facts: Summary, source: string) {
-  if (activePanel) { activePanel.remove(); activePanel = null; return; }
-  const overlay = document.createElement('div');
-  overlay.className = 'soren-conversation-backdrop';
-  overlay.innerHTML = `<section class="soren-conversation" role="dialog" aria-modal="true" aria-labelledby="soren-conversation-title">
-    <header class="soren-conversation-head">
-      <img src="/soren-dna.png" alt=""/><div><p>SOREN / DIRECT CHANNEL</p><h2 id="soren-conversation-title">Let's talk strategy.</h2></div>
-      <button class="soren-conversation-close" type="button" aria-label="Close Soren conversation">×</button>
-    </header>
-    <div class="soren-conversation-context"><span class="soren-conversation-dot"></span> LOCAL INTELLIGENCE PREVIEW <span>·</span> ${escape(source)} <span>·</span> ${facts.days} DAYS</div>
+async function fetchHistory(userId:string,businessId:string|null):Promise<Line[]> {
+  let query=supabase.from('conversation_messages').select('role,content').eq('user_id',userId).order('created_at',{ascending:false}).limit(50);
+  query=businessId?query.eq('business_id',businessId):query.is('business_id',null);
+  const {data,error}=await query;
+  if(error)throw error;
+  return (data??[]).reverse().map(row=>({role:row.role as Line['role'],text:row.content as string}));
+}
+async function fetchMemories(userId:string,businessId:string|null):Promise<Memory[]> {
+  if(!businessId)return [];
+  const {data,error}=await supabase.from('business_memories').select('id,note').eq('user_id',userId).eq('business_id',businessId).order('created_at',{ascending:false}).limit(20);
+  if(error)throw error;
+  return (data??[]) as Memory[];
+}
+async function saveLine(userId:string,businessId:string|null,line:Line) {
+  const {error}=await supabase.from('conversation_messages').insert({user_id:userId,business_id:businessId,role:line.role,content:line.text.slice(0,4000)});
+  if(error)throw error;
+}
+export function closeSorenConversation() { teardown?.(); }
+export function attachSorenLauncher(root:HTMLDivElement,facts:Summary,source:string) {
+  const button=document.createElement('button');
+  button.type='button';
+  button.className='soren-floating-launcher';
+  button.setAttribute('aria-label','Open chat with Soren');
+  button.title='Open chat with Soren';
+  button.innerHTML='<img src="/soren-dna.png" alt=""/><span>CHAT WITH SOREN</span>';
+  root.appendChild(button);
+  button.addEventListener('click',()=>{void openSorenConversation(facts,source);});
+}
+export async function openSorenConversation(facts:Summary,source:string) {
+  if(activePanel)return;
+  const {data:{user},error:userError}=await supabase.auth.getUser();
+  if(userError||!user){alert('Please sign in to speak with Soren.');return;}
+  const businessId=getActiveBusinessId();
+  const businessName=getActiveBusinessName();
+  const overlay=document.createElement('div');
+  overlay.className='soren-conversation-backdrop';
+  overlay.innerHTML=`<section class="soren-conversation" role="dialog" aria-modal="true" aria-labelledby="soren-conversation-title">
+    <header class="soren-conversation-head"><img src="/soren-dna.png" alt=""/><div><p>SOREN / DIRECT CHANNEL</p><h2 id="soren-conversation-title">Let's talk strategy.</h2></div><button class="soren-conversation-close" aria-label="Close Soren conversation" type="button">×</button></header>
+    <div class="soren-conversation-context"><span class="soren-conversation-dot"></span> <span class="conversation-context-business">${escape(businessName)}</span> <span>·</span> ${escape(source)} <span>·</span> ${facts.days} DAYS</div>
+    <div class="soren-memory-bar"><span>BUSINESS MEMORY <strong class="soren-memory-count">0</strong></span><button type="button" class="soren-memory-toggle">MANAGE MEMORY ↗</button></div>
+    <section class="soren-memory-list" hidden><p>To save a fact, tell Soren: <strong>Remember: our busiest day is Saturday.</strong></p><div class="soren-memory-items"></div></section>
     <div class="soren-conversation-messages" aria-live="polite" aria-label="Soren conversation"></div>
-    <form class="soren-conversation-form"><label for="soren-message">ASK SOREN</label><div class="soren-compose"><textarea id="soren-message" rows="2" maxlength="600" required placeholder="What's the biggest problem hiding in these numbers?"></textarea><button type="submit" aria-label="Send message">↗</button></div></form>
-    <p class="soren-conversation-note">Local, evidence-based preview · Meta API calls disabled · No credits spent</p>
+    <form class="soren-conversation-form"><label for="soren-message">ASK SOREN</label><div class="soren-compose"><textarea id="soren-message" rows="2" maxlength="600" required placeholder="Ask about strategy—or say Remember: ..."></textarea><button type="submit" aria-label="Send message">↗</button></div></form>
+    <p class="soren-conversation-note">Private history saved to your account · Memory belongs to this business · Model usage remains guarded</p>
   </section>`;
   document.body.appendChild(overlay);
-  activePanel = overlay;
-  const messages = overlay.querySelector<HTMLElement>('.soren-conversation-messages')!;
-  const input = overlay.querySelector<HTMLTextAreaElement>('#soren-message')!;
-  const close = () => { overlay.remove(); activePanel = null; document.removeEventListener('keydown', onKeys); };
-  const onKeys = (event: KeyboardEvent) => { if (event.key === 'Escape') close(); };
-  document.addEventListener('keydown', onKeys);
-  overlay.querySelector('.soren-conversation-close')!.addEventListener('click', close);
-  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
-  function renderLines() {
-    const lines: Line[] = [{role:'soren',text:"Well, look who brought me some numbers. Lovely. Let's figure out what they actually say."}, ...history];
-    messages.innerHTML = lines.map(line => `<article class="soren-line ${line.role}"><span>${line.role === 'soren' ? 'SOREN' : 'YOU'}</span><p>${escape(line.text)}</p></article>`).join('');
-    messages.scrollTop = messages.scrollHeight;
+  activePanel=overlay;
+  const messages=overlay.querySelector<HTMLElement>('.soren-conversation-messages')!;
+  const input=overlay.querySelector<HTMLTextAreaElement>('#soren-message')!;
+  const submit=overlay.querySelector<HTMLButtonElement>('.soren-compose button')!;
+  const memoryList=overlay.querySelector<HTMLElement>('.soren-memory-list')!;
+  const memoryItems=overlay.querySelector<HTMLElement>('.soren-memory-items')!;
+  const memoryCount=overlay.querySelector<HTMLElement>('.soren-memory-count')!;
+  let lines:Line[]=[];
+  let notes:Memory[]=[];
+  let closed=false;
+  const onKey=(e:KeyboardEvent)=>{if(e.key==='Escape')close();};
+  function close(){
+    closed=true;
+    document.removeEventListener('keydown',onKey);
+    overlay.remove();if(activePanel===overlay)activePanel=null;
+    teardown=null;
   }
-  renderLines();
-  const send = overlay.querySelector<HTMLButtonElement>('.soren-compose button')!;
-  overlay.querySelector<HTMLFormElement>('.soren-conversation-form')!.addEventListener('submit', async event => {
+  teardown=close;
+  document.addEventListener('keydown',onKey);
+  overlay.querySelector('.soren-conversation-close')!.addEventListener('click',close);
+  overlay.addEventListener('click',e=>{if(e.target===overlay)close();});
+  window.addEventListener('soren:auth-changed',()=>{void supabase.auth.getUser().then(({data})=>{if(!data.user||data.user.id!==user.id)close();});},{once:true});
+  function draw() {
+    const visible:Line[]=[{role:'soren',text:"Good to see you, partner. What's on your mind?"},...lines];
+    messages.innerHTML=visible.map(line=>'<article class="soren-line '+line.role+'"><span>'+(line.role==='soren'?'SOREN':'YOU')+'</span><p>'+escape(line.text)+'</p></article>').join('');
+    messages.scrollTop=messages.scrollHeight;
+  }
+  function drawMemories() {
+    memoryCount.textContent=String(notes.length);
+    memoryItems.innerHTML=notes.length?notes.map(note=>'<div class="soren-memory-entry"><span>'+escape(note.note)+'</span><button type="button" data-forget="'+escape(note.id)+'" aria-label="Forget this memory">FORGET ×</button></div>').join(''):'<p>No saved memories for this business yet.</p>';
+    memoryItems.querySelectorAll<HTMLButtonElement>('[data-forget]').forEach(button=>button.addEventListener('click',async()=>{
+      const id=button.dataset.forget!;
+      button.disabled=true;
+      const {error}=await supabase.from('business_memories').delete().eq('id',id).eq('user_id',user.id);
+      if(error){button.disabled=false;button.textContent='RETRY';return;}
+      notes=notes.filter(note=>note.id!==id);drawMemories();
+    }));
+  }
+  overlay.querySelector('.soren-memory-toggle')!.addEventListener('click',()=>{memoryList.hidden=!memoryList.hidden;});
+  messages.innerHTML='<div class="soren-history-loading">Retrieving your private conversation…</div>';
+  try{
+    [lines,notes]=await Promise.all([fetchHistory(user.id,businessId),fetchMemories(user.id,businessId)]);
+    if(closed)return;draw();drawMemories();
+  }catch(error){
+    if(closed)return;
+    messages.innerHTML='<div class="soren-history-loading">Could not load private conversation history. Please close and retry.</div>';
+    submit.disabled=true;return;
+  }
+  overlay.querySelector<HTMLFormElement>('.soren-conversation-form')!.addEventListener('submit',async event=>{
     event.preventDefault();
-    const question = input.value.trim();
-    if (!question || send.disabled) return;
-    const prior = history.slice(-6).map(line => ({role:line.role === 'soren' ? 'assistant' : 'user',content:line.text.slice(0,900)}));
-    history.push({role:'user',text:question});
-    input.value = '';
-    send.disabled = true;
-    const waiting: Line = {role:'soren',text:'Looking at the evidence…'};
-    history.push(waiting);
-    renderLines();
-    try {
-      const {data:{session}} = await supabase.auth.getSession();
-      if (!session) throw Error('Session expired. Please sign in again.');
-      const res = await fetch('/api/chat',{
-        method:'POST',
-        headers:{'content-type':'application/json','authorization':'Bearer '+session.access_token},
-        body:JSON.stringify({question,facts,history:prior})
-      });
-      const response = await res.json() as {answer?:string;error?:string;demo?:boolean};
-      if (res.status === 503 && response.demo) waiting.text = localPreview(question,facts);
-      else if (res.ok && response.answer) waiting.text = response.answer;
-      else waiting.text = response.error || 'Soren could not respond right now. Please retry.';
-    } catch (err) {
-      waiting.text = err instanceof Error ? err.message : 'Connection failed. Please retry.';
-    } finally {
-      if (history.length > 24) history.splice(0,history.length-24);
-      send.disabled = false;
-      renderLines();
-      input.focus();
-    }
+    const question=input.value.trim();
+    if(!question||submit.disabled)return;
+    submit.disabled=true;input.value='';
+    const userLine:Line={role:'user',text:question};
+    const prior=lines.slice(-6).map(line=>({role:line.role==='soren'?'assistant':'user',content:line.text.slice(0,900)}));
+    lines.push(userLine);draw();
+    try{
+      await saveLine(user.id,businessId,userLine);
+      let reply:string;
+      if(/^remember\s*:/i.test(question)){
+        const note=question.replace(/^remember\s*:/i,'').trim();
+        if(!businessId)reply='Create or select a business workspace first, then I can remember facts specifically for that business.';
+        else if(!note||note.length>500)reply='Keep a memory between 1 and 500 characters, partner.';
+        else{
+          const {data,error}=await supabase.from('business_memories').insert({user_id:user.id,business_id:businessId,note}).select('id,note').single();
+          if(error)throw error;
+          notes.unshift(data as Memory);drawMemories();
+          reply='Noted. I saved that to '+businessName+' memory. You can review or delete it any time.';
+        }
+      }else{
+        const {data:{session}}=await supabase.auth.getSession();
+        if(!session)throw Error('Session expired. Please sign in again.');
+        const res=await fetch('/api/chat',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+session.access_token},body:JSON.stringify({question,facts,history:prior,memories:notes.slice(0,8).map(note=>note.note)})});
+        const response=await res.json() as {answer?:string;error?:string;demo?:boolean};
+        if(res.status===503&&response.demo)reply=preview(question,facts);
+        else if(res.ok&&response.answer)reply=response.answer;
+        else reply=response.error||'Soren is temporarily unavailable.';
+      }
+      const line:Line={role:'soren',text:reply};
+      lines.push(line);draw();
+      await saveLine(user.id,businessId,line);
+    }catch(error){
+      lines.push({role:'soren',text:'I couldn’t save or retrieve that message securely. '+(error instanceof Error?error.message:'Please try again.')});
+      draw();
+    }finally{submit.disabled=false;if(!closed)input.focus();}
   });
-  input.addEventListener('keydown', event => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); overlay.querySelector<HTMLFormElement>('.soren-conversation-form')!.requestSubmit(); } });
+  input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();overlay.querySelector<HTMLFormElement>('.soren-conversation-form')!.requestSubmit();}});
   input.focus();
 }
