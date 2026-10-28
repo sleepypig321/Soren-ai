@@ -356,3 +356,19 @@ img,svg{max-width:100%}
 .clover-evidence-footer p{margin:0;flex:1 1 300px;font-size:.84rem}
 .clover-evidence-footer button{white-space:normal;text-align:center;max-width:100%}
 @media(max-width:680px){.clover-evidence-grid{grid-template-columns:minmax(0,1fr)}.clover-evidence-item{padding:15px}.clover-evidence-footer button{width:100%}}
+
+/* Period-matched, owner-supplied retail COGS analysis. */
+.clover-profit-model{margin:22px 0;padding:clamp(16px,2.7vw,28px);border:1px solid rgba(128,192,253,.36);border-radius:21px;background:linear-gradient(125deg,rgba(14,31,70,.9),rgba(29,35,84,.68));min-width:0}
+.clover-profit-model h4{font-size:clamp(1.1rem,2.2vw,1.55rem);color:#f1f4ff;margin:9px 0}
+.clover-profit-model p{color:#b9c8e7;line-height:1.6;max-width:720px}
+.clover-profit-model label{display:block;margin-top:18px;margin-bottom:8px;color:#c3d6fa;font-size:.75rem;font-weight:700;letter-spacing:.09em}
+.clover-profit-entry{display:flex;gap:10px;flex-wrap:wrap;min-width:0}
+.clover-profit-entry input{flex:1 1 180px;min-width:0;max-width:300px;background:#0b1834;border:1px solid rgba(153,188,249,.45);border-radius:10px;color:#f3f5ff;padding:12px;font:inherit}
+.clover-profit-entry button{max-width:100%}
+.clover-profit-results{margin-top:18px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.clover-profit-results>div{min-width:0;padding:15px;border-radius:13px;background:rgba(3,13,37,.57);border:1px solid rgba(164,186,248,.17)}
+.clover-profit-results span{display:block;font-size:.72rem;letter-spacing:.08em;color:#aec6f7;margin-bottom:7px}
+.clover-profit-results strong{display:block;color:#f2f4ff;font-size:clamp(1.25rem,3vw,1.8rem);overflow-wrap:anywhere}
+.clover-profit-model .clover-profit-pending{font-weight:700;color:#d6b0ff;margin-bottom:0}
+.clover-profit-model .clover-profit-caution{font-size:.82rem;margin-bottom:0}
+@media(max-width:540px){.clover-profit-results{grid-template-columns:minmax(0,1fr)}.clover-profit-entry input{max-width:none}.clover-profit-entry button{flex:0 0 auto}}
