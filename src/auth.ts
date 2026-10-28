@@ -1,3 +1,4 @@
+import { openBusinessDNA } from './business-dna';
 import { createClient, type User } from '@supabase/supabase-js';
 
 const url = 'https://oclhhrnlltocibkuinie.supabase.co';
@@ -100,6 +101,10 @@ export function addAccountToolbar() {
     currentBusinessId = (e.target as HTMLSelectElement).value || null;
     window.dispatchEvent(new Event('soren:business-changed'));
   });
+  const dnaButton=panel.querySelector<HTMLButtonElement>('#business-dna')!;
+  dnaButton.disabled=!currentBusinessId;
+  dnaButton.title=currentBusinessId?'Edit retail business profile':'Create a business first';
+  dnaButton.addEventListener('click', () => {if(currentBusinessId)void openBusinessDNA(supabase,currentBusinessId,getActiveBusinessName());});
   panel.querySelector('#add-business')!.addEventListener('click', () => {
     const backdrop = document.createElement('div');
     backdrop.className = 'workspace-modal-backdrop';
