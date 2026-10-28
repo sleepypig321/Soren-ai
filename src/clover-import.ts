@@ -4,6 +4,7 @@ type CloverReport={days:Day[];reportedNet:number;period:string;fileName:string};
 let current:CloverReport|null=null;
 let scope='';
 let enteredCogs='';
+let dataRevision=0;
 const storageKey=(id:string)=>'soren:clover-daily:v1:'+id;
 function readSaved(id:string):{report:CloverReport;cogs:string}|null {
   try {
@@ -77,7 +78,7 @@ function parse(raw:string,fileName:string):CloverReport{
 }
 export function renderCloverImport(container:HTMLElement,accountScope:string){
   if(scope!==accountScope){
-    scope=accountScope;current=null;enteredCogs='';
+    scope=accountScope;current=null;enteredCogs='';dataRevision++;
     if(!scope.startsWith('signed-out:')){const saved=readSaved(scope);if(saved){current=saved.report;enteredCogs=saved.cogs;}}
   }
   const paint=()=>{
@@ -127,7 +128,7 @@ export function renderCloverImport(container:HTMLElement,accountScope:string){
       try{
         if(canSyncImports())await removeCloudImport('clover_daily');
         if(targetScope!==scope)return;
-        current=null;enteredCogs='';saveCurrent();paint();
+        dataRevision++;current=null;enteredCogs='';saveCurrent();paint();
       }catch(err){container.querySelector<HTMLElement>('#clover-feedback')!.textContent=err instanceof Error?err.message:'Unable to remove the cloud copy.';}
     });
     container.querySelector<HTMLInputElement>('#clover-cogs')?.addEventListener('change',e=>{
@@ -136,9 +137,9 @@ export function renderCloverImport(container:HTMLElement,accountScope:string){
       if(value!==''&&(!Number.isFinite(Number(value))||Number(value)<0||Number(value)>1e9)){
         const status=container.querySelector<HTMLElement>('#clover-feedback')!;status.textContent='Enter a valid nonnegative COGS amount, or leave it blank if unknown.';return;
       }
-      enteredCogs=value;saveCurrent();paint();if(current&&canSyncImports()){const targetScope=scope;void saveCloudImport('clover_daily',{report:current,cogs:enteredCogs}).catch(err=>{if(scope===targetScope)container.querySelector<HTMLElement>('#clover-feedback')!.textContent=err.message;});}
+      dataRevision++;enteredCogs=value;saveCurrent();paint();if(current&&canSyncImports()){const targetScope=scope;void saveCloudImport('clover_daily',{report:current,cogs:enteredCogs}).catch(err=>{if(scope===targetScope)container.querySelector<HTMLElement>('#clover-feedback')!.textContent=err.message;});}
     });
-    container.querySelector<HTMLButtonElement>('#clover-clear-cost')?.addEventListener('click',()=>{enteredCogs='';saveCurrent();paint();if(current&&canSyncImports())void saveCloudImport('clover_daily',{report:current,cogs:enteredCogs}).catch(()=>{});});
+    container.querySelector<HTMLButtonElement>('#clover-clear-cost')?.addEventListener('click',()=>{dataRevision++;enteredCogs='';saveCurrent();paint();if(current&&canSyncImports())void saveCloudImport('clover_daily',{report:current,cogs:enteredCogs}).catch(()=>{});});
     container.querySelector<HTMLButtonElement>('#clover-evidence-template')?.addEventListener('click',()=>{
       const rows=[['Data needed','Matching period','Question unlocked','Source'],['Transaction counts',report?.period||'','Average transaction value','Clover orders / transaction report'],['Cost of goods sold',report?.period||'','Gross margin','Actual costs'],['Operating expenses',report?.period||'','Modeled break-even','Fixed and variable; exclude COGS'],['Product movement and stock',report?.period||'','Inventory intelligence','Item-level sales and on-hand']];
       const csv=rows.map(row=>row.map(cell=>'"'+cell.replace(/"/g,'""')+'"').join(',')).join('\r\n');
@@ -148,15 +149,16 @@ export function renderCloverImport(container:HTMLElement,accountScope:string){
     container.querySelector<HTMLInputElement>('#clover-upload')!.addEventListener('change',async e=>{
       const f=(e.target as HTMLInputElement).files?.[0];if(!f)return;
       const status=container.querySelector<HTMLElement>('#clover-feedback')!;
-      try{if(f.size>500000)throw Error('File exceeds 500 KB.');const parsed=parse(await f.text(),f.name);current=parsed;enteredCogs='';const saved=saveCurrent();paint();if(canSyncImports()){const targetScope=scope;void saveCloudImport('clover_daily',{report:parsed,cogs:''}).then(()=>{if(scope===targetScope)container.querySelector<HTMLElement>('#clover-feedback')!.textContent='Clover import saved privately to your business workspace and this browser.';}).catch(err=>{if(scope===targetScope)container.querySelector<HTMLElement>('#clover-feedback')!.textContent=err.message+' Your device copy remains available.';});}if(!saved)container.querySelector<HTMLElement>('#clover-feedback')!.textContent='Imported for this session, but this browser could not save the report. Storage may be disabled or full.';container.querySelector<HTMLElement>('#clover-feedback')!.textContent='Imported '+parsed.days.length+' reporting days from '+parsed.fileName+'.';}
+      try{if(f.size>500000)throw Error('File exceeds 500 KB.');const parsed=parse(await f.text(),f.name);dataRevision++;current=parsed;enteredCogs='';const saved=saveCurrent();paint();if(canSyncImports()){const targetScope=scope;void saveCloudImport('clover_daily',{report:parsed,cogs:''}).then(()=>{if(scope===targetScope)container.querySelector<HTMLElement>('#clover-feedback')!.textContent='Clover import saved privately to your business workspace and this browser.';}).catch(err=>{if(scope===targetScope)container.querySelector<HTMLElement>('#clover-feedback')!.textContent=err.message+' Your device copy remains available.';});}if(!saved)container.querySelector<HTMLElement>('#clover-feedback')!.textContent='Imported for this session, but this browser could not save the report. Storage may be disabled or full.';if(saved)container.querySelector<HTMLElement>('#clover-feedback')!.textContent='Imported '+parsed.days.length+' reporting days from '+parsed.fileName+'.';}
       catch(err){status.textContent=err instanceof Error?err.message:'Could not read Clover report.';}
     });
   };
   paint();
   if(canSyncImports()){
     const targetScope=scope;
+    const initialRevision=dataRevision;
     void loadCloudImport('clover_daily').then(async payload=>{
-      if(scope!==targetScope)return;
+      if(scope!==targetScope||dataRevision!==initialRevision)return;
       const cloud=payload as {report?:CloverReport;cogs?:string}|null;
       if(cloud?.report&&Array.isArray(cloud.report.days)&&cloud.report.days.length>0&&cloud.report.days.length<=366&&
         Number.isFinite(cloud.report.reportedNet)&&cloud.report.days.every(day=>typeof day.date==='string'&&/^\\d{4}-\\d{2}-\\d{2}$/.test(day.date)&&Number.isFinite(day.net))&&
