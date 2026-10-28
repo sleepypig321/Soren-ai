@@ -75,6 +75,7 @@ export async function openSorenConversation(facts:Summary,source:string) {
   function close(){
     closed=true;
     document.removeEventListener('keydown',onKey);
+    window.removeEventListener('soren:auth-changed',onAuthChanged);
     overlay.remove();if(activePanel===overlay)activePanel=null;
     teardown=null;
   }
@@ -82,7 +83,8 @@ export async function openSorenConversation(facts:Summary,source:string) {
   document.addEventListener('keydown',onKey);
   overlay.querySelector('.soren-conversation-close')!.addEventListener('click',close);
   overlay.addEventListener('click',e=>{if(e.target===overlay)close();});
-  window.addEventListener('soren:auth-changed',()=>{void supabase.auth.getUser().then(({data})=>{if(!data.user||data.user.id!==user.id)close();});},{once:true});
+  const onAuthChanged=()=>{void supabase.auth.getUser().then(({data})=>{if(!data.user||data.user.id!==user.id)close();});};
+  window.addEventListener('soren:auth-changed',onAuthChanged);
   function draw() {
     const visible:Line[]=[{role:'soren',text:"Good to see you, partner. What's on your mind?"},...lines];
     messages.innerHTML=visible.map(line=>'<article class="soren-line '+line.role+'"><span>'+(line.role==='soren'?'SOREN':'YOU')+'</span><p>'+escape(line.text)+'</p></article>').join('');
