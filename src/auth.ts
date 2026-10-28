@@ -123,7 +123,7 @@ export function addAccountToolbar() {
     const onKeydown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && !create.disabled) close();
       if (event.key === 'Tab') {
-        const controls = [...backdrop.querySelectorAll<HTMLElement>('button,input')].filter(el => !el.hasAttribute('disabled'));
+        const controls = Array.from(backdrop.querySelectorAll<HTMLElement>('button,input')).filter(el => !el.hasAttribute('disabled'));
         const first = controls[0], last = controls[controls.length - 1];
         if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
         else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
