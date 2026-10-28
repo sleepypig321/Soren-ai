@@ -158,3 +158,30 @@
 .soren-memory-entry button{background:transparent;border:1px solid #738ac186;color:#b7cafa;font-size:9px;font-weight:800;padding:7px 9px;cursor:pointer}
 .soren-history-loading{color:#9eb6df;font-size:13px;line-height:1.6;padding:20px}
 @media(max-width:650px){.soren-floating-launcher{right:12px;bottom:12px;padding:3px 11px 3px 2px;font-size:9px}.soren-floating-launcher img{width:49px;height:49px}.soren-memory-bar{padding:12px 14px}.soren-memory-list{padding:12px 14px}}
+
+
+/* Retail Business DNA — a private, editable owner intelligence profile */
+.account-toolbar button:disabled{opacity:.43;cursor:not-allowed}
+.dna-backdrop{position:fixed;z-index:10020;inset:0;display:grid;place-items:center;overflow:auto;padding:20px;background:#010614d9;backdrop-filter:blur(16px)}
+.dna-dialog{position:relative;box-sizing:border-box;width:min(100%,730px);max-height:min(90vh,920px);overflow-y:auto;border:1px solid #8ba5ee8a;background:radial-gradient(circle at 87% 0,#6755bb5b,transparent 45%),radial-gradient(circle at 4% 70%,#1576a22d,transparent 45%),linear-gradient(145deg,#18284c,#070e22 78%);color:#eff4ff;padding:clamp(23px,4vw,42px);box-shadow:0 40px 120px #000b,0 0 70px #658bff31}
+.dna-close{position:absolute;right:15px;top:13px;background:#101f3d;border:1px solid #8faee977;color:#d7e8ff;font-size:27px;width:37px;height:37px;cursor:pointer}
+.dna-overline{display:flex;align-items:center;gap:10px;color:#aec8ff;letter-spacing:.17em;font-size:10px;font-weight:800}
+.dna-overline img{width:65px;height:65px;object-fit:contain;filter:drop-shadow(0 0 13px #789fff)}
+.dna-dialog h2{font-weight:500;line-height:1.1;font-size:clamp(30px,5vw,46px);letter-spacing:-.04em;max-width:520px;margin:14px 0}
+.dna-dialog h2 em{font:italic 1em Georgia,serif;color:#c0adff}
+.dna-description{font-size:13px;color:#adc0e8;line-height:1.65;margin-bottom:18px}
+.dna-state{color:#a9f5e8;font-size:12px;min-height:20px;line-height:1.5}
+.dna-workspace{font-size:11px;color:#b0c6ff;text-transform:uppercase;letter-spacing:.1em;border-bottom:1px solid #8ea6df54;padding-bottom:18px;margin-bottom:22px}
+#dna-form{display:flex;flex-direction:column;gap:19px}
+#dna-form label{display:flex;flex-direction:column;gap:9px;color:#b5c9f2;font-size:10px;font-weight:800;letter-spacing:.12em}
+.dna-fields{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+#dna-form input,#dna-form textarea,#dna-form select{width:100%;box-sizing:border-box;border:1px solid #7796d77c;border-radius:2px;background:#0c1833;color:#f4f6ff;padding:13px 12px;font:400 13px/1.5 system-ui,sans-serif;outline:none}
+#dna-form textarea{resize:vertical;min-height:65px}
+#dna-form input:focus,#dna-form select:focus,#dna-form textarea:focus{border-color:#b1d3ff;box-shadow:0 0 0 3px #758dff28}
+#dna-form ::placeholder{color:#7a92bc}
+.dna-privacy{font-size:11px;color:#91a8d0;line-height:1.6;margin:0}
+.dna-actions{display:flex;gap:12px;justify-content:flex-end}
+.dna-actions button{border:1px solid #839fe78a;padding:15px;font-size:11px;font-weight:800;letter-spacing:.07em;color:#dae7ff;background:transparent;cursor:pointer}
+.dna-actions .dna-save{border:0;background:linear-gradient(115deg,#8fd5ff,#b5a3ff);color:#0d1834;box-shadow:0 0 25px #7d91ff69}
+.dna-actions button:disabled{opacity:.5;cursor:wait}
+@media(max-width:580px){.dna-fields{grid-template-columns:1fr}.dna-dialog{max-height:94vh}.dna-actions{flex-direction:column-reverse}.dna-actions button{width:100%}}
