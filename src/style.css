@@ -341,3 +341,18 @@ img,svg{max-width:100%}
   .data-heading h2,.inventory-title h2{font-size:27px}
   .account-name{font-size:9px}
 }
+
+/* Guided retail evidence intake: actionable, readable on every device. */
+.clover-evidence{margin-top:24px;padding:clamp(16px,2.8vw,30px);border:1px solid rgba(143,180,255,.32);border-radius:22px;background:linear-gradient(135deg,rgba(21,40,83,.8),rgba(45,26,81,.62));box-shadow:inset 0 1px rgba(255,255,255,.07)}
+.clover-evidence-head h4{margin:9px 0;font-size:clamp(1.2rem,2.3vw,1.65rem);color:#eaf1ff}
+.clover-evidence-head p,.clover-evidence-item p,.clover-evidence-footer p{color:#b9c7e8;line-height:1.65}
+.clover-evidence-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:22px 0}
+.clover-evidence-item{min-width:0;border:1px solid rgba(132,173,243,.23);border-radius:15px;padding:18px;background:rgba(7,17,44,.44)}
+.clover-evidence-state{display:inline-block;color:#f9c9e6;border:1px solid rgba(245,153,211,.35);border-radius:99px;padding:4px 9px;font-size:.67rem;letter-spacing:.1em}
+.clover-evidence-item h5{font-size:1rem;color:#e9eeff;margin:14px 0 5px}
+.clover-evidence-item p{margin:0 0 18px;font-size:.89rem}
+.clover-evidence-item>span:last-child{font-size:.69rem;letter-spacing:.08em;color:#a3d8ff;font-weight:700}
+.clover-evidence-footer{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;border-top:1px solid rgba(143,180,255,.18);padding-top:17px}
+.clover-evidence-footer p{margin:0;flex:1 1 300px;font-size:.84rem}
+.clover-evidence-footer button{white-space:normal;text-align:center;max-width:100%}
+@media(max-width:680px){.clover-evidence-grid{grid-template-columns:minmax(0,1fr)}.clover-evidence-item{padding:15px}.clover-evidence-footer button{width:100%}}
