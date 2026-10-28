@@ -164,4 +164,5 @@ function render(){
   attachSorenLauncher(app,s,source);
 }
 window.addEventListener('popstate', () => { activePage = getPage(); render(); window.scrollTo(0,0); });
+window.addEventListener('soren:business-changed', () => { render(); });
 initAuth(app, render);
