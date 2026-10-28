@@ -259,3 +259,28 @@
 .inventory-error{color:#ffb5c6;font-size:12px;width:100%}
 @media(max-width:1000px){.inventory-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.inventory-investigation{grid-template-columns:1fr}}
 @media(max-width:580px){.inventory-title{flex-direction:column}.inventory-stats{grid-template-columns:1fr 1fr}.inventory-stats>div{padding:14px}.inventory-operations small{margin-left:0}.inventory-title h2{font-size:34px}}
+
+
+/* Clover daily report import — native source preserved, financial unknowns explicit */
+.clover-import{display:block;margin:40px 0 10px;padding-top:36px;border-top:1px solid #86a1d656}
+.clover-heading{display:flex;align-items:center;justify-content:space-between;gap:20px}
+.clover-heading h3{font:500 clamp(24px,3vw,35px)/1.16 Manrope,sans-serif;letter-spacing:-.045em;margin:13px 0}
+.clover-heading p{font-size:12px;line-height:1.75;color:#adbee0;max-width:550px}
+.clover-heading .import-button{background:linear-gradient(110deg,#8cd2ff,#baa8ff);border:0;flex:none;padding:15px;color:#08132b;font-weight:800;font-size:10px;letter-spacing:.08em;cursor:pointer}
+.clover-feedback{min-height:17px;color:#9eddd7;font-size:12px;margin:14px 0}
+.clover-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:17px 0}
+.clover-summary>div{padding:22px;border:1px solid #829de05b;background:#172747}
+.clover-summary span{display:block;color:#99b9e8;font-size:10px;letter-spacing:.08em;font-weight:800;margin-bottom:10px}
+.clover-summary strong{font-size:clamp(20px,2.3vw,29px);color:#e6e8ff;letter-spacing:-.045em}
+.clover-reconcile{font-size:11px;color:#a5dfd3;line-height:1.7}
+.clover-daily-chart{height:200px;display:flex;align-items:end;gap:4px;padding:18px 12px 0;border:1px solid #7b97d05b;background:linear-gradient(160deg,#19264b,#0b1933)}
+.clover-daily-chart>div{flex:1;min-width:3px;height:100%;display:flex;align-items:end}
+.clover-daily-chart>div span{display:block;width:100%;background:linear-gradient(#b7a7fa,#659cfb);box-shadow:0 0 10px #7d8ff05b;min-height:2px}
+.clover-table-wrap{overflow-x:auto;max-height:420px;overflow-y:auto;margin-top:15px;border:1px solid #7a94c24d}
+.clover-table-wrap table{border-collapse:collapse;width:100%;min-width:560px}
+.clover-table-wrap th{position:sticky;top:0;text-align:left;padding:12px 15px;background:#243355;color:#b2c8ee;font-size:10px;letter-spacing:.09em}
+.clover-table-wrap td{padding:10px 15px;border-top:1px solid #7e95c32b;color:#d4e2fb;font-size:12px}
+.clover-table-wrap tr:nth-child(even){background:#101f3a}
+.clover-limit{padding:17px 21px;background:#2421438a;border-left:2px solid #b6a2ff;color:#b8cae9;font-size:12px;line-height:1.7;margin:20px 0}
+.clover-empty{color:#9bb5dc;background:#152646;padding:24px;font-size:12px}
+@media(max-width:750px){.clover-heading{align-items:stretch;flex-direction:column}.clover-summary{grid-template-columns:1fr}}
