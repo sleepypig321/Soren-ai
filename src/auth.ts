@@ -94,7 +94,7 @@ export function addAccountToolbar() {
   panel.innerHTML = `<label for="business-select">BUSINESS</label><select id="business-select" aria-label="Active business">
     <option value="">${businesses.length ? 'SELECT WORKSPACE' : 'NO WORKSPACE YET'}</option>
     ${businesses.map(b => `<option value="${escapeText(b.id)}" ${b.id === currentBusinessId ? 'selected' : ''}>${escapeText(b.name)}</option>`).join('')}
-    </select><button id="add-business" title="Create a business workspace">＋ BUSINESS</button>
+    </select><button id="business-dna" title="Edit retail business profile">◈ BUSINESS DNA</button><button id="add-business" title="Create a business workspace">＋ BUSINESS</button>
     <span class="account-name">${escapeText(currentUser.email ?? 'PARTNER')}</span><button id="sign-out" title="Sign out">SIGN OUT ↗</button>`;
   topline.insertAdjacentElement('afterend', panel);
   panel.querySelector<HTMLSelectElement>('#business-select')!.addEventListener('change', e => {
