@@ -1,3 +1,5 @@
+import { supabase } from './auth';
+
 type Summary = {
   revenue: number;
   profit: number;
@@ -54,15 +56,38 @@ export function openSorenConversation(facts: Summary, source: string) {
     messages.scrollTop = messages.scrollHeight;
   }
   renderLines();
-  overlay.querySelector<HTMLFormElement>('.soren-conversation-form')!.addEventListener('submit', event => {
+  const send = overlay.querySelector<HTMLButtonElement>('.soren-compose button')!;
+  overlay.querySelector<HTMLFormElement>('.soren-conversation-form')!.addEventListener('submit', async event => {
     event.preventDefault();
     const question = input.value.trim();
-    if (!question) return;
-    history.push({role:'user',text:question},{role:'soren',text:localPreview(question,facts)});
-    if (history.length > 24) history.splice(0,history.length-24);
+    if (!question || send.disabled) return;
+    const prior = history.slice(-6).map(line => ({role:line.role === 'soren' ? 'assistant' : 'user',content:line.text.slice(0,900)}));
+    history.push({role:'user',text:question});
     input.value = '';
+    send.disabled = true;
+    const waiting: Line = {role:'soren',text:'Looking at the evidence…'};
+    history.push(waiting);
     renderLines();
-    input.focus();
+    try {
+      const {data:{session}} = await supabase.auth.getSession();
+      if (!session) throw Error('Session expired. Please sign in again.');
+      const res = await fetch('/api/chat',{
+        method:'POST',
+        headers:{'content-type':'application/json','authorization':'Bearer '+session.access_token},
+        body:JSON.stringify({question,facts,history:prior})
+      });
+      const response = await res.json() as {answer?:string;error?:string;demo?:boolean};
+      if (res.status === 503 && response.demo) waiting.text = localPreview(question,facts);
+      else if (res.ok && response.answer) waiting.text = response.answer;
+      else waiting.text = response.error || 'Soren could not respond right now. Please retry.';
+    } catch (err) {
+      waiting.text = err instanceof Error ? err.message : 'Connection failed. Please retry.';
+    } finally {
+      if (history.length > 24) history.splice(0,history.length-24);
+      send.disabled = false;
+      renderLines();
+      input.focus();
+    }
   });
   input.addEventListener('keydown', event => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); overlay.querySelector<HTMLFormElement>('.soren-conversation-form')!.requestSubmit(); } });
   input.focus();
