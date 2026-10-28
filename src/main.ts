@@ -1,4 +1,5 @@
 import './style.css';
+import { openSorenConversation } from './conversation';
 import { initAuth, addAccountToolbar } from './auth';
 
 type Sale = { date: string; revenue: number; transactions: number; cogs: number };
@@ -95,7 +96,7 @@ function render(){
         '<div class="stage" id="intelligence"><section class="orbit-scene" aria-label="Interactive business intelligence map">'+
           '<div class="orbit-grid"></div><div class="orbital orbital-a"></div><div class="orbital orbital-b"></div><div class="orbital orbital-c"></div>'+
           '<div class="crosshair crosshair-one">+</div><div class="crosshair crosshair-two">+</div>'+
-          '<div class="orbit-core"><div class="core-aura"></div><div class="core-disc"><img src="/soren-dna.png" alt="Soren glowing DNA emblem"/></div><span class="core-label">SOREN / CORE</span></div>'+
+          '<div class="orbit-core" id="soren-core" role="button" tabindex="0" aria-label="Talk to Soren"><div class="core-aura"></div><div class="core-disc"><img src="/soren-dna.png" alt="Soren glowing DNA emblem"/></div><span class="core-label">SOREN / CORE</span></div>'+
           orbitItems.map(([id,label,value])=>'<button class="signal signal-'+id+(id===selectedInsight?' selected':'')+'" data-focus="'+id+'" aria-pressed="'+(id===selectedInsight)+'"><span class="signal-point"></span><span class="signal-caption">'+label+'</span><strong>'+value+'</strong></button>').join('')+
           '<div class="orbit-footer"><span>BUSINESS SYSTEM / '+s.days+' DAY WINDOW</span><span>04 CONNECTED SIGNALS</span></div>'+
         '</section>'+
@@ -104,7 +105,7 @@ function render(){
           '<div class="brief-main"><div class="seq">01—04 / CURRENT FOCUS</div><p class="eyebrow">'+active.label+'</p><div class="focus-value">'+active.value+'</div><p class="focus-context">'+active.context+'</p><div class="brief-rule"></div>'+
           '<p class="brief-caption">WHAT THE DATA SAYS</p><p class="brief-body">'+active.evidence+'</p><p class="brief-caption">WHAT I WOULD INVESTIGATE</p><p class="brief-body">'+active.action+'</p></div>'+
           '<div class="brief-voice"><span class="voice-icon">S</span><p>“'+verdict+' We can investigate it, but we are absolutely not confusing a hypothesis with a fact.”</p></div>'+
-          '<button class="strategy-button" id="ask">Develop a strategy <span>↗</span></button><p class="api-state" id="ai-status" role="status">Model calls are locked until a server-side spending guard is installed.</p>'+
+          '<button class="strategy-button" id="ask">Develop a strategy <span>↗</span></button><p class="api-state" id="ai-status" role="status">Talk to Soren in local preview mode. Live Meta calls remain locked for credit safety.</p>'+
         '</section></div>'+
         '<section class="signal-floor" id="signals"><div class="section-title"><span class="section-index">02 / OPERATING PULSE</span><h2>A pattern worth watching.</h2><p>'+escapeHTML(source)+' · Observed revenue, not a forecast</p></div>'+
           '<div class="pulse-chart"><svg viewBox="0 0 780 180" role="img" aria-label="Revenue trend across reporting days" preserveAspectRatio="none"><defs><linearGradient id="pulseGrad" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#7aa7ff" stop-opacity=".3"/><stop offset="1" stop-color="#7aa7ff" stop-opacity="0"/></linearGradient></defs><path d="M16 166 H764 M16 122 H764 M16 78 H764 M16 34 H764" fill="none" stroke="#7ca2eb" stroke-opacity=".12"/><polygon points="16,166 '+points+' 764,166" fill="url(#pulseGrad)"/><polyline points="'+points+'" fill="none" stroke="#98beff" stroke-width="3" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/></svg><div class="pulse-axis"><span>'+escapeHTML(ordered[0].date)+'</span><span>'+escapeHTML(ordered[ordered.length-1].date)+'</span></div></div>'+
@@ -126,13 +127,11 @@ function render(){
     try{if(file.size>200000)throw Error('File exceeds 200 KB.');sales=parseCSV(await file.text());source=file.name;selectedInsight='revenue';render();}
     catch(err){alert(err instanceof Error?err.message:'Unable to read CSV');}
   });
-  document.querySelector<HTMLButtonElement>('#ask')!.addEventListener('click',async ()=>{
-    const status=document.querySelector<HTMLElement>('#ai-status')!;status.textContent='Checking live intelligence availability…';
-    try{
-      const res=await fetch('/api/analyze',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({facts:s,question:'Identify three evidence-based growth opportunities.'})});
-      const result=await res.json() as {error?:string;answer?:string};status.textContent=result.answer||result.error||'No response available.';
-    }catch{status.textContent='Local analysis only. Live AI is not enabled.';}
-  });
+  const beginConversation = () => openSorenConversation(s, source);
+  document.querySelector<HTMLButtonElement>('#ask')!.addEventListener('click', beginConversation);
+  const core = document.querySelector<HTMLElement>('#soren-core')!;
+  core.addEventListener('click', beginConversation);
+  core.addEventListener('keydown', e => { if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); beginConversation(); } });
   addAccountToolbar();
 }
 initAuth(app, render);
