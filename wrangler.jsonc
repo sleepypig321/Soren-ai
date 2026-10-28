@@ -10,7 +10,8 @@
     ]
   },
   "vars": {
-    "AI_ENABLED": "false"
+    "AI_ENABLED": "false",
+    "AI_TEST_LIMIT": "2"
   },
   "d1_databases": [
     {
