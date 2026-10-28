@@ -161,9 +161,9 @@ export function renderCloverImport(container:HTMLElement,accountScope:string){
       if(scope!==targetScope||dataRevision!==initialRevision)return;
       const cloud=payload as {report?:CloverReport;cogs?:string}|null;
       if(cloud?.report&&Array.isArray(cloud.report.days)&&cloud.report.days.length>0&&cloud.report.days.length<=366&&
-        Number.isFinite(cloud.report.reportedNet)&&cloud.report.days.every(day=>typeof day.date==='string'&&/^\\d{4}-\\d{2}-\\d{2}$/.test(day.date)&&Number.isFinite(day.net))&&
+        Number.isFinite(cloud.report.reportedNet)&&cloud.report.days.every(day=>typeof day.date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(day.date)&&Number.isFinite(day.net))&&
         Math.abs(sum(cloud.report.days)-cloud.report.reportedNet)<=.02){
-        current=cloud.report;enteredCogs=typeof cloud.cogs==='string'&&(/^(?:|\\d+(?:\\.\\d+)?)$/.test(cloud.cogs))&&Number(cloud.cogs||'0')<=1e9?cloud.cogs:'';
+        current=cloud.report;enteredCogs=typeof cloud.cogs==='string'&&(/^(?:|\d+(?:\.\d+)?)$/.test(cloud.cogs))&&Number(cloud.cogs||'0')<=1e9?cloud.cogs:'';
         saveCurrent();paint();
         container.querySelector<HTMLElement>('#clover-feedback')!.textContent='Restored from your private business workspace.';
       }else if(!payload&&current){
