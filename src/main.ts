@@ -92,9 +92,9 @@ function render(){
     '<div class="observatory">'+
       '<aside class="identity-rail"><div class="rail-logo"><img src="/soren-dna.png" alt="Soren DNA mark"/></div>'+
         '<div class="rail-divider"></div><nav aria-label="Soren pages">'+
-          '<button type="button" data-page-link="overview" class="rail-link'+(activePage==='overview'?' active':'')+'" aria-label="Overview" aria-current="'+(activePage==='overview'?'page':'false')+'" title="Overview">✧</button>'+
-          '<button type="button" data-page-link="signals" class="rail-link'+(activePage==='signals'?' active':'')+'" aria-label="Business signals" aria-current="'+(activePage==='signals'?'page':'false')+'" title="Business signals">⌁</button>'+
-          '<button type="button" data-page-link="data" class="rail-link'+(activePage==='data'?' active':'')+'" aria-label="Data sources" aria-current="'+(activePage==='data'?'page':'false')+'" title="Data sources">▤</button>'+
+          '<button type="button" data-page-link="overview" class="rail-link'+(activePage==='overview'?' active':'')+'" aria-label="Overview" aria-current="'+(activePage==='overview'?'page':'false')+'" data-tooltip="Overview">✧</button>'+
+          '<button type="button" data-page-link="signals" class="rail-link'+(activePage==='signals'?' active':'')+'" aria-label="Business signals" aria-current="'+(activePage==='signals'?'page':'false')+'" data-tooltip="Business Signals">⌁</button>'+
+          '<button type="button" data-page-link="data" class="rail-link'+(activePage==='data'?' active':'')+'" aria-label="Data sources" aria-current="'+(activePage==='data'?'page':'false')+'" data-tooltip="Data Sources">▤</button>'+
           '</nav>'+
         '<div class="rail-bottom"><span class="rail-pulse"></span><span>01</span></div></aside>'+
       '<div class="workspace" data-page="'+activePage+'">'+
