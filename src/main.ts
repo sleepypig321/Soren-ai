@@ -3,6 +3,7 @@ import { openSorenConversation, attachSorenLauncher } from './conversation';
 import { initAuth, addAccountToolbar, getActiveBusinessId, getActiveUserId } from './auth';
 import { investigateRetail } from './investigations';
 import { renderInventory } from './inventory';
+import { renderCloverImport } from './clover-import';
 
 type Sale = { date: string; revenue: number; transactions: number; cogs: number };
 const demo: Sale[] = [
@@ -153,6 +154,7 @@ function render(){
     try{if(file.size>200000)throw Error('File exceeds 200 KB.');sales=parseCSV(await file.text());source=file.name;selectedInsight='revenue';render();}
     catch(err){alert(err instanceof Error?err.message:'Unable to read CSV');}
   });
+  if(activePage==='data')renderCloverImport(document.querySelector<HTMLElement>('.clover-import')!, (getActiveUserId()??'signed-out')+':'+(getActiveBusinessId()??'personal'));
   if(activePage==='inventory')renderInventory(document.querySelector<HTMLElement>('.inventory-deck')!, (getActiveUserId()??'signed-out')+':'+(getActiveBusinessId()??'personal'));
   const beginConversation = () => openSorenConversation(s, source);
   document.querySelector<HTMLButtonElement>('#investigate-chat')?.addEventListener('click', beginConversation);
