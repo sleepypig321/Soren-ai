@@ -75,3 +75,31 @@
 .account-toolbar button:hover{border-color:#b5caff}
 .account-name{margin-left:auto;color:#9bb8e8}
 @media(max-width:650px){.account-toolbar{gap:8px}.account-toolbar select{max-width:135px}.account-name{order:5;margin:0;width:100%}}
+
+/* Workspace creation: native Soren modal, never browser prompt() */
+.workspace-modal-backdrop{position:fixed;z-index:9999;inset:0;display:grid;place-items:center;padding:20px;overflow-y:auto;background:#020716c9;backdrop-filter:blur(14px);animation:workspace-shade .2s ease}
+.workspace-modal{position:relative;width:min(100%,500px);box-sizing:border-box;padding:clamp(25px,5vw,44px);background:radial-gradient(circle at 85% 4%,#5554b53a,transparent 46%),linear-gradient(155deg,#182950,#090f27 80%);border:1px solid #9faefa73;box-shadow:0 0 0 1px #6d82c228,0 0 100px #536cff32,0 36px 100px #000b;overflow:hidden;color:#eef5ff}
+.workspace-modal:before{content:"";position:absolute;pointer-events:none;inset:0;border-top:2px solid #a3bfff9c;background:radial-gradient(#a7beff7a .7px,transparent 1px) 0 0/41px 57px;opacity:.25}
+.workspace-modal>*{position:relative}
+.workspace-modal-close{position:absolute;right:17px;top:12px;border:0;background:none;color:#adc5ef;font-size:29px;line-height:1;cursor:pointer;padding:6px}
+.workspace-modal-close:hover{color:white}
+.workspace-modal-identity{display:flex;align-items:center;gap:10px;color:#abc5fc;font-size:10px;font-weight:800;letter-spacing:.18em}
+.workspace-modal-identity img{width:60px;height:60px;object-fit:contain;filter:drop-shadow(0 0 17px #69a5ff9d)}
+.workspace-modal-step{color:#8da7d5;font-size:10px;letter-spacing:.18em;margin:28px 0 10px}
+.workspace-modal h2{font-size:clamp(30px,5vw,47px);line-height:1.14;letter-spacing:-.052em;font-weight:600;margin:0 0 17px}
+.workspace-modal h2 em{font:italic 1em Georgia,serif;color:#b9adff}
+#workspace-modal-description{font-size:13px;line-height:1.7;color:#9fb5d9;margin:0 0 32px;max-width:350px}
+#workspace-modal-form label{display:block;font-size:10px;font-weight:800;letter-spacing:.16em;color:#acc7f5;margin-bottom:11px}
+#workspace-business-name{width:100%;box-sizing:border-box;border:1px solid #8ea8ee83;background:#091633d9;color:#f4f7ff;border-radius:2px;outline:none;padding:16px;font-size:14px}
+#workspace-business-name:focus{border-color:#b6c9ff;box-shadow:0 0 0 3px #8ca7ff2b,0 0 30px #6992ff28}
+#workspace-business-name::placeholder{color:#6785b3}
+.workspace-modal-hint{color:#7d9bc9;font-size:11px;margin:13px 0 6px}
+.workspace-modal-error{color:#ffb5c6;font-size:12px;line-height:1.5;min-height:18px;margin:9px 0}
+.workspace-modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:24px;flex-wrap:wrap}
+.workspace-modal-actions button{font-size:11px;font-weight:900;letter-spacing:.08em;padding:15px 17px;cursor:pointer}
+.workspace-modal-cancel{color:#c1d3f3;background:transparent;border:1px solid #738fbc77}
+.workspace-modal-create{color:#08132b;border:0;background:linear-gradient(110deg,#86c8ff,#c4a2ff);box-shadow:0 0 23px #8da0ff48}
+.workspace-modal-create:disabled{opacity:.65;cursor:wait}
+@keyframes workspace-shade{from{opacity:0}to{opacity:1}}
+@media(max-width:480px){.workspace-modal-actions{flex-direction:column-reverse}.workspace-modal-actions button{width:100%}}
+@media(prefers-reduced-motion:reduce){.workspace-modal-backdrop{animation:none}}
