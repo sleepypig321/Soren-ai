@@ -128,3 +128,12 @@
 .soren-compose button{width:55px;font-size:27px;font-weight:700;color:#07162e;border:0;background:linear-gradient(150deg,#8ed4ff,#b9a1ff);cursor:pointer}
 .soren-conversation-note{margin:12px 25px 24px;color:#819bc3;font-size:10px;line-height:1.6}
 @media(max-width:600px){.soren-conversation-head{padding:18px 14px}.soren-conversation-head img{width:60px;height:60px}.soren-conversation-messages{padding:17px 13px}.soren-conversation-form{margin:0 13px}.soren-conversation-note{margin:10px 13px 16px}}
+
+/* Sidebar icon navigation: distinct command-center pages, not anchor scrolling */
+.rail-link{appearance:none;border:0;padding:0;font:inherit;cursor:pointer;background:transparent}
+.rail-link.active{color:#d8eaff;background:linear-gradient(130deg,#274275c9,#31265cba);box-shadow:0 0 25px #668eff6e,inset 2px 0 #9ad7ff}
+.workspace[data-page="overview"] .signal-floor,.workspace[data-page="overview"] .data-deck{display:none}
+.workspace[data-page="signals"] .hero-line,.workspace[data-page="signals"] .stage,.workspace[data-page="signals"] .data-deck{display:none}
+.workspace[data-page="data"] .hero-line,.workspace[data-page="data"] .stage,.workspace[data-page="data"] .signal-floor{display:none}
+.workspace[data-page="signals"] .signal-floor{min-height:calc(100vh - 240px);padding-top:clamp(48px,8vh,100px);border-bottom:0}
+.workspace[data-page="data"] .data-deck{min-height:calc(100vh - 240px);padding-top:clamp(48px,8vh,100px);align-content:start;border-bottom:0}
