@@ -166,7 +166,7 @@ export function renderCloverImport(container:HTMLElement,accountScope:string){
       try{
         if(canSyncImports())await removeCloudImport('clover_daily');
         if(targetScope!==scope)return;
-        dataRevision++;current=null;enteredCogs='';saveCurrent();paint();
+        dataRevision++;current=null;enteredCogs='';saveCurrent();paint();queueMicrotask(()=>window.dispatchEvent(new Event('soren:clover-changed')));
       }catch(err){container.querySelector<HTMLElement>('#clover-feedback')!.textContent=err instanceof Error?err.message:'Unable to remove the cloud copy.';}
     });
     container.querySelector<HTMLInputElement>('#clover-cogs')?.addEventListener('change',e=>{
@@ -187,7 +187,7 @@ export function renderCloverImport(container:HTMLElement,accountScope:string){
     container.querySelector<HTMLInputElement>('#clover-upload')!.addEventListener('change',async e=>{
       const f=(e.target as HTMLInputElement).files?.[0];if(!f)return;
       const status=container.querySelector<HTMLElement>('#clover-feedback')!;
-      try{if(f.size>500000)throw Error('File exceeds 500 KB.');const parsed=await parseDailyReport(await f.text(),f.name);dataRevision++;current=parsed;enteredCogs='';const saved=saveCurrent();paint();if(canSyncImports()){const targetScope=scope;void saveCloudImport('clover_daily',{report:parsed,cogs:''}).then(()=>{if(scope===targetScope)container.querySelector<HTMLElement>('#clover-feedback')!.textContent='Clover import saved privately to your business workspace and this browser.';}).catch(err=>{if(scope===targetScope)container.querySelector<HTMLElement>('#clover-feedback')!.textContent=err.message+' Your device copy remains available.';});}if(!saved)container.querySelector<HTMLElement>('#clover-feedback')!.textContent='Imported for this session, but this browser could not save the report. Storage may be disabled or full.';if(saved)container.querySelector<HTMLElement>('#clover-feedback')!.textContent='Imported '+parsed.days.length+' reporting days from '+parsed.fileName+'.';}
+      try{if(f.size>500000)throw Error('File exceeds 500 KB.');const parsed=await parseDailyReport(await f.text(),f.name);dataRevision++;current=parsed;enteredCogs='';const saved=saveCurrent();paint();queueMicrotask(()=>window.dispatchEvent(new Event('soren:clover-changed')));if(canSyncImports()){const targetScope=scope;void saveCloudImport('clover_daily',{report:parsed,cogs:''}).then(()=>{if(scope===targetScope)container.querySelector<HTMLElement>('#clover-feedback')!.textContent='Clover import saved privately to your business workspace and this browser.';}).catch(err=>{if(scope===targetScope)container.querySelector<HTMLElement>('#clover-feedback')!.textContent=err.message+' Your device copy remains available.';});}if(!saved)container.querySelector<HTMLElement>('#clover-feedback')!.textContent='Imported for this session, but this browser could not save the report. Storage may be disabled or full.';if(saved)container.querySelector<HTMLElement>('#clover-feedback')!.textContent='Imported '+parsed.days.length+' reporting days from '+parsed.fileName+'.';}
       catch(err){status.textContent=err instanceof Error?err.message:'Could not read Clover report.';}
     });
   };
