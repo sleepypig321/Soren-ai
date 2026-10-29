@@ -34,3 +34,10 @@ test('sales fluctuations do not get presented as proven causes', () => {
   assert.match(result.trend.limitation,/does not establish why/);
   assert.match(result.range.limitation,/not proof of seasonality/);
 });
+
+test('empty financial rows produce an honest no-data finding without crashing', () => {
+  const result = investigateRetail([],0);
+  assert.equal(result.length,1);
+  assert.equal(result[0].metric,'NO DATA');
+  assert.match(result[0].limitation,/not evidence of zero revenue/);
+});
