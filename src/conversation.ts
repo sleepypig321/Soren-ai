@@ -13,7 +13,7 @@ async function cloverFacts():Promise<CloverFacts|null>{
   try{payload=await loadCloudImport('clover_daily');}catch{/* Use a valid local copy if the network fails. */}
   if(!payload){try{const local=localStorage.getItem('soren:clover-daily:v1:'+scope);payload=local?JSON.parse(local):null;}catch{return null;}}
   const report=(payload as {report?:{days?:CloverDay[];reportedNet?:number}}|null)?.report;
-  if(!report||!Array.isArray(report.days)||report.days.length<1||report.days.length>366||!Number.isFinite(report.reportedNet))return null;
+  if(!report||!Array.isArray(report.days)||report.days.length<1||report.days.length>10000||!Number.isFinite(report.reportedNet))return null;
   if(!report.days.every(d=>typeof d.date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(d.date)&&Number.isFinite(d.net)))return null;
   const days=[...report.days].sort((a,b)=>a.date.localeCompare(b.date));
   if(Math.abs(days.reduce((n,d)=>n+d.net,0)-report.reportedNet!)>.02)return null;
