@@ -196,15 +196,19 @@ export async function openSorenConversation(facts:Summary,source:string) {
     try{
       await saveLine(userId,businessId,userLine);
       let reply:string;
-      if(/^remember\s*:/i.test(question)){
-        const note=question.replace(/^remember\s*:/i,'').trim();
+      const remembered=/^remember(?:\\s+that)?\\s*:?\\s+(.+)$/i.exec(question);
+      if(remembered){
+        const full=remembered[1].trim();
+        const split=full.match(/^(.+?\\.)(?:\\s+)(.+\\?)$/);
+        const note=(split?split[1]:full).replace(/\\.$/,'').trim();
+        const followup=split?split[2].trim():'';
         if(!businessId)reply='Create or select a business workspace first, then I can remember facts specifically for that business.';
         else if(!note||note.length>500)reply='Keep a memory between 1 and 500 characters, partner.';
         else{
           const {data,error}=await supabase.from('business_memories').insert({user_id:userId,business_id:businessId,note}).select('id,note').single();
           if(error)throw error;
           notes.unshift(data as Memory);drawMemories();
-          reply='Noted. I saved that to '+businessName+' memory. You can review or delete it any time.';
+          reply='Noted. I saved that to '+businessName+' memory. You can review or delete it any time.'+(followup?' '+preview(followup,facts,clover,previousUserQuestion):'');
         }
       }else{
         const {data:{session}}=await supabase.auth.getSession();
