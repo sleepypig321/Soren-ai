@@ -46,7 +46,7 @@ let cloverRevision=0;
 function applyCloverPayload(payload:unknown):boolean {
   const report=(payload as CloverStored|null)?.report;
   if(!report||!Array.isArray(report.days)||report.days.length<1||report.days.length>10000||
-    !Number.isFinite(report.reportedNet)||!report.days.every(day=>typeof day.date==='string'&&/^\\d{4}-\\d{2}-\\d{2}$/.test(day.date)&&Number.isFinite(day.net) )||
+    !Number.isFinite(report.reportedNet)||!report.days.every(day=>typeof day.date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(day.date)&&Number.isFinite(day.net) )||
     Math.abs(report.days.reduce((sum,day)=>sum+day.net,0)-report.reportedNet)>.02)return false;
   cloverDays=[...report.days].sort((a,b)=>a.date.localeCompare(b.date));
   cloverSource=typeof report.fileName==='string'?report.fileName.slice(0,150):'Saved Clover report';
