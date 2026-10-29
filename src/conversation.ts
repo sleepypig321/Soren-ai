@@ -6,8 +6,21 @@ type CloverDay = { date:string; net:number };
 type CloverFacts = {
   kind:'clover';netSales:number;days:number;firstDate:string;lastDate:string;
   recent7:number|null;prior7:number|null;highest:{date:string;net:number};lowest:{date:string;net:number};
+  monthly:{month:string;reportedDays:number;net:number}[];
+  daily:{date:string;net:number}[];
+  milestones:{date:string;note:string;beforeDays:number;afterDays:number;beforeNet:number;afterNet:number;changePct:number|null}[];
 };
-async function cloverFacts():Promise<CloverFacts|null>{
+function dateInNote(note:string):string|null{
+  const iso=note.match(/\b(20\d{2}-\d{2}-\d{2})\b/);
+  if(iso)return !Number.isNaN(Date.parse(iso[1]))?iso[1]:null;
+  const named=note.match(/\b(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)\s+(\d{1,2}),?\s+(20\d{2})\b/i);
+  if(!named)return null;
+  const months=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+  const month=months.findIndex(m=>named[1].toLowerCase().startsWith(m));
+  const d=new Date(Date.UTC(Number(named[3]),month,Number(named[2])));
+  return d.getUTCMonth()===month&&d.getUTCDate()===Number(named[2])?d.toISOString().slice(0,10):null;
+}
+async function cloverFacts(notes:{note:string}[]=[]):Promise<CloverFacts|null>{
   const scope=currentImportScope();if(!scope)return null;
   let payload:unknown=null;
   try{payload=await loadCloudImport('clover_daily');}catch{/* Use a valid local copy if the network fails. */}
@@ -23,9 +36,27 @@ async function cloverFacts():Promise<CloverFacts|null>{
   const total=(list:CloverDay[])=>list.reduce((n,d)=>n+d.net,0);
   const highest=complete.length?complete.reduce((a,b)=>a.net>b.net?a:b):days[0];
   const lowest=complete.length?complete.reduce((a,b)=>a.net<b.net?a:b):days[0];
+  const monthlyMap=new Map<string,{month:string;reportedDays:number;net:number}>();
+  for(const day of complete){
+    const month=day.date.slice(0,7);
+    const previous=monthlyMap.get(month)??{month,reportedDays:0,net:0};
+    previous.reportedDays++;previous.net+=day.net;monthlyMap.set(month,previous);
+  }
+  const byDate=new Map(complete.map(day=>[day.date,day.net]));
+  const milestones=notes.flatMap(({note})=>{
+    const date=dateInNote(note);if(!date)return [];
+    const base=Date.parse(date+'T00:00:00Z');if(!Number.isFinite(base))return [];
+    const dates=(offset:number)=>new Date(base+offset*86400000).toISOString().slice(0,10);
+    const before=Array.from({length:7},(_,i)=>byDate.get(dates(i-7))).filter((v):v is number=>v!==undefined);
+    const after=Array.from({length:7},(_,i)=>byDate.get(dates(i))).filter((v):v is number=>v!==undefined);
+    const beforeNet=before.reduce((n,v)=>n+v,0),afterNet=after.reduce((n,v)=>n+v,0);
+    return [{date,note:note.slice(0,180),beforeDays:before.length,afterDays:after.length,beforeNet,afterNet,
+      changePct:before.length===7&&after.length===7&&beforeNet>0?Math.round((afterNet/beforeNet-1)*1000)/10:null}];
+  }).slice(0,5);
   return {kind:'clover',netSales:report.reportedNet!,days:days.length,firstDate:days[0].date,lastDate:days.at(-1)!.date,
     recent7:recent.length===7?total(recent):null,prior7:prior.length===7?total(prior):null,
-    highest:{date:highest.date,net:highest.net},lowest:{date:lowest.date,net:lowest.net}};
+    highest:{date:highest.date,net:highest.net},lowest:{date:lowest.date,net:lowest.net},
+    monthly:[...monthlyMap.values()].slice(-24),daily:complete.slice(-60),milestones};
 }
 type Line = { role:'user'|'soren'; text:string };
 type Memory = { id:string; note:string };
@@ -48,7 +79,7 @@ async function fetchHistory(userId:string,businessId:string|null):Promise<Line[]
 }
 async function fetchMemories(userId:string,businessId:string|null):Promise<Memory[]> {
   if(!businessId)return [];
-  const {data,error}=await supabase.from('business_memories').select('id,note').eq('user_id',userId).eq('business_id',businessId).order('created_at',{ascending:false}).limit(20);
+  const {data,error}=await supabase.from('business_memories').select('id,note').eq('user_id',userId).eq('business_id',businessId).order('created_at',{ascending:false}).limit(30);
   if(error)throw error;
   return (data??[]) as Memory[];
 }
@@ -145,7 +176,7 @@ export async function openSorenConversation(facts:Summary,source:string) {
     if(!question||submit.disabled)return;
     submit.disabled=true;input.value='';
     const userLine:Line={role:'user',text:question};
-    const prior=lines.slice(-6).map(line=>({role:line.role==='soren'?'assistant':'user',content:line.text.slice(0,900)}));
+    const prior=lines.slice(-4).map(line=>({role:line.role==='soren'?'assistant':'user',content:line.text.slice(0,500)}));
     lines.push(userLine);draw();
     try{
       await saveLine(userId,businessId,userLine);
@@ -188,7 +219,9 @@ export async function openSorenConversation(facts:Summary,source:string) {
             dnaContext=[parts.slice(0,4).join(' | ').slice(0,500),parts.slice(4).join(' | ').slice(0,500)];
           }
         }
-        const res=await fetch('/api/chat',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+session.access_token},body:JSON.stringify({question,facts:clover??(facts.days>0?facts:null),history:prior,memories:[...dnaContext,...notes.map(note=>note.note)].slice(0,8)})});
+        const relevantNotes=[...notes.slice(0,5),...notes.filter(item=>dateInNote(item.note)).slice(0,3)].filter((item,index,array)=>array.findIndex(x=>x.id===item.id)===index).slice(0,8);
+        const updatedClover=await cloverFacts(relevantNotes);
+        const res=await fetch('/api/chat',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+session.access_token},body:JSON.stringify({question,facts:updatedClover??(facts.days>0?facts:null),history:prior,memories:[...dnaContext,...relevantNotes.map(item=>item.note.slice(0,300))].slice(0,8)})});
         const response=await res.json() as {answer?:string;error?:string;demo?:boolean};
         if(res.ok&&response.answer)reply=response.answer;
         else reply=response.error||'Soren is temporarily unavailable.';
