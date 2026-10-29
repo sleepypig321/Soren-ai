@@ -47,7 +47,6 @@ function authScreen(message = '') {
         <p class="auth-feedback" id="auth-feedback" role="status">${escapeText(message)}</p>
         <p class="auth-footnote">Your business data belongs in your private workspace. Never share passwords or secret API keys.</p>
       </section>
-    </div>
       <div class="landing-feature-column landing-feature-right">
         <article class="landing-orbit-box"><span class="landing-feature-number">03 / CONVERSATION</span><span class="landing-orbit-glyph">◈</span><h3>Talk to your data.</h3><p>Ask Soren questions and get direct answers with clear limits and next steps.</p></article>
         <article class="landing-orbit-box"><span class="landing-feature-number">04 / CONTINUITY</span><span class="landing-orbit-glyph">✧</span><h3>A mind with context.</h3><p>Private business profiles, saved notes, and conversation history stay together.</p></article>
