@@ -36,7 +36,9 @@ const money=(n:number)=>new Intl.NumberFormat('en-US',{style:'currency',currency
 const escape=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 // Render a tiny, safe subset of chat Markdown after HTML-escaping all user/model text.
 const formatChatText=(s:string)=>escape(s)
+  .replace(/\\\*/g,'*')
   .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+  .replace(/(^|[^\w*])\*([^*\n]+)\*(?!\w)/g,'$1<em>$2</em>')
   .replace(/(^|\n)[ \t]*[\*-][ \t]+/g,'$1• ');
 let activePanel:HTMLElement|null=null;
 let teardown:(()=>void)|null=null;
