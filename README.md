@@ -20,6 +20,16 @@ These are pain points I have personally dealt with:
 
 The longer-term vision is a business intelligence partner that **evolves as the owner and business evolve**: each import extends the record, each saved operational decision adds context, and future questions can be grounded in more of the business's actual history. Soren currently supports that foundation through retained sales reports and business notes; it is not an automatic integration with every POS or inventory platform.
 
+## Intelligence architecture: universal core, retail specialization
+
+Soren now separates **universal business reasoning** from its first **industry specialization: retail**. The Worker composes both at runtime from `worker/intelligence.ts`, alongside its independent conversational voice. Other industry modules are a future roadmap, **not active capabilities in this submission**.
+
+The universal core sets an explicit evidence hierarchy: verified records and authoritative retrieved sources, owner-reported observations, inspectable calculations, tentative interpretations, and unconfirmed hypotheses. It requires accurate time periods and denominators, honest uncertainty, careful source attribution, and reversible recommendations with measurable outcomes. It cannot claim to have performed live external research when no retrieval capability was provided.
+
+The retail specialization adds domain checks for conversion, basket economics, product contribution, merchandising, inventory, staffing, reporting completeness, and product-specific regulatory questions. It must ask for missing traffic or transaction counts instead of inventing them, and avoid calling a timing correlation proof of a business decision's impact.
+
+The architecture is designed to grow into additional industry-specific modules while preserving the same evidence standards. This is a **prompt-level reasoning framework**, not a guarantee of expert accuracy; deterministic calculations, real data, tests, and human review remain essential.
+
 ## What Soren can do today
 
 ### Build an evolving, private business history
