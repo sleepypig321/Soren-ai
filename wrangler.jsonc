@@ -11,7 +11,7 @@
   },
   "vars": {
     "AI_ENABLED": "false",
-    "AI_TEST_LIMIT": "2"
+    "AI_PHASE": "development"
   },
   "d1_databases": [
     {
