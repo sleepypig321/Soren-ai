@@ -1,14 +1,6 @@
 import { normalizeColumns, type FieldSpec } from './column-map';
 export type InventoryItem={sku:string;name:string;unitCost:number;price:number;onHand:number;sold30:number;reorderPoint:number;leadDays:number};
-const demo:InventoryItem[]=[
-{sku:'DEMO-101',name:'Sapphire Glass Piece',unitCost:21,price:49,onHand:4,sold30:18,reorderPoint:5,leadDays:7},
-{sku:'DEMO-102',name:'Aurora Accessories Kit',unitCost:8,price:22,onHand:42,sold30:3,reorderPoint:6,leadDays:5},
-{sku:'DEMO-103',name:'Midnight Storage Jar',unitCost:4,price:12,onHand:0,sold30:9,reorderPoint:7,leadDays:4},
-{sku:'DEMO-104',name:'Premium Display Stand',unitCost:30,price:65,onHand:15,sold30:0,reorderPoint:3,leadDays:10},
-{sku:'DEMO-105',name:'Cosmic Gift Set',unitCost:14,price:35,onHand:8,sold30:11,reorderPoint:5,leadDays:6},
-{sku:'DEMO-106',name:'Travel Organizer',unitCost:6,price:18,onHand:25,sold30:5,reorderPoint:4,leadDays:5}
-];
-let items=[...demo];let source='Synthetic product catalog';let scope='';
+let items:InventoryItem[]=[];let source='No inventory imported';let scope='';
 const escape=(v:string)=>v.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 const usd=(n:number)=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:2}).format(n);
 const marginPct=(i:InventoryItem)=>i.price>0?100*(i.price-i.unitCost)/i.price:null;
@@ -64,8 +56,19 @@ function metrics(product:InventoryItem){
   return {velocity,cover,reorder,suggested,out,slow};
 }
 export function renderInventory(root:HTMLElement,identityScope:string) {
-  if(scope!==identityScope){scope=identityScope;items=[...demo];source='Synthetic product catalog';}
+  if(scope!==identityScope){scope=identityScope;items=[];source='No inventory imported';}
   function draw(){
+    if(items.length===0){
+      root.innerHTML='<div class="inventory-title"><div><span class="section-index">04 / STOCK INTELLIGENCE</span><h2>Inventory intelligence starts with your products.</h2><p>No inventory data has been imported for this workspace. No prices, margins, stock levels or reorder alerts are assumed.</p></div><span class="inventory-source">AWAITING INVENTORY DATA</span></div>'+
+        '<div class="inventory-operations"><label class="import-button">IMPORT INVENTORY CSV ↑<input id="inventory-file" type="file" accept=".csv,text/csv" hidden/></label><small>Local analysis · No Meta model credits</small></div>'+
+        '<p class="inventory-schema">Import an inventory snapshot with <code>sku,name,unit_cost,price,on_hand,sold_30d</code>. Unit cost and selling price are needed for margins; on-hand and units sold are needed for stock signals.</p>';
+      root.querySelector<HTMLInputElement>('#inventory-file')!.addEventListener('change',async e=>{
+        const file=(e.target as HTMLInputElement).files?.[0];if(!file)return;
+        try{if(file.size>500000)throw Error('File is larger than 500 KB.');const normalized=await normalizeColumns(await file.text(),inventoryFields,'inventory');items=parse(normalized);source=file.name;draw();}
+        catch(err){const status=document.createElement('p');status.className='inventory-error';status.setAttribute('role','alert');status.textContent=err instanceof Error?err.message:'Unable to read inventory CSV.';root.querySelector('.inventory-operations')!.append(status);}
+      });
+      return;
+    }
     const value=items.reduce((sum,r)=>sum+r.onHand*r.unitCost,0);
     const out=items.filter(i=>i.onHand===0).length;
     const low=items.filter(i=>metrics(i).reorder&&i.onHand>0).length;
@@ -76,13 +79,13 @@ export function renderInventory(root:HTMLElement,identityScope:string) {
     root.innerHTML='<div class="inventory-title"><div><span class="section-index">04 / STOCK INTELLIGENCE</span><h2>Inventory has a pulse, too.</h2><p>Know what is selling, what needs attention, and where your cash is sitting. Evidence before assumptions, darling.</p></div><span class="inventory-source">'+escape(source)+'</span></div>'+
       '<div class="inventory-stats"><div><span>AT-COST STOCK VALUE</span><strong>'+usd(value)+'</strong><small>On hand × unit cost</small></div><div><span>OUT OF STOCK</span><strong>'+out+'</strong><small>Zero units recorded</small></div><div><span>AT REORDER THRESHOLD</span><strong>'+low+'</strong><small>Excludes zero-stock items</small></div><div><span>LOW SALES VELOCITY</span><strong>'+slow+'</strong><small>0–2 units sold in 30 days</small></div></div>'+
       '<div class="inventory-margin-insight"><span class="section-index">PRODUCT MARGIN INTELLIGENCE</span><h3>Revenue is not the same as money kept.</h3><p>'+thinMargins.length+' product(s) have a recorded gross margin below 10%. This is a review threshold, not an automatic reason to discontinue them; transactions, payment fees and overhead are not included.</p><div class="inventory-margin-ranks"><div><b>LOW-MARGIN REVIEW</b>'+(thinMargins.length?thinMargins.slice(0,4).map(i=>'<p>'+escape(i.name)+': '+marginPct(i)!.toFixed(1)+'% margin · '+usd(unitGrossProfit(i))+' unit gross profit</p>').join(''):'<p>No entered product is below the 10% review threshold.</p>')+'</div><div><b>HIGHEST UNIT GROSS PROFIT</b>'+(rankedMargins.length?[...rankedMargins].sort((a,b)=>unitGrossProfit(b)-unitGrossProfit(a)).slice(0,4).map(i=>'<p>'+escape(i.name)+': '+usd(unitGrossProfit(i))+' per unit · '+marginPct(i)!.toFixed(1)+'% margin</p>').join(''):'<p>Enter selling prices and costs to compare products.</p>')+'</div></div><p class="inventory-margin-disclaimer">Gross margin = (price − unit cost) ÷ price. Price and cost must refer to comparable units and exclude sales tax. These rankings do not prove which products are commonly bought together or whether discontinuing an item would improve total profit.</p></div>'+
-      '<div class="inventory-operations"><label class="import-button">IMPORT INVENTORY CSV ↑<input id="inventory-file" type="file" accept=".csv,text/csv" hidden/></label><button id="inventory-reset" type="button" class="reset-button">RESET SAMPLE ↺</button><small>Local analysis · No model credits · Data is not saved to your account</small></div>'+
+      '<div class="inventory-operations"><label class="import-button">IMPORT INVENTORY CSV ↑<input id="inventory-file" type="file" accept=".csv,text/csv" hidden/></label><button id="inventory-reset" type="button" class="reset-button">CLEAR INVENTORY ↺</button><small>Local analysis · No model credits · Data is not saved to your account</small></div>'+
       '<div class="inventory-table-wrap"><table class="inventory-table"><thead><tr><th>SKU / PRODUCT</th><th>ON HAND</th><th>SOLD / 30 DAYS</th><th>STOCK COST</th><th>GROSS MARGIN</th><th>DAYS OF COVER</th><th>STATUS</th></tr></thead><tbody>'+items.map(i=>{const m=metrics(i);return '<tr><td data-label="PRODUCT"><strong>'+escape(i.name)+'</strong><small>'+escape(i.sku)+'</small></td><td data-label="ON HAND">'+i.onHand+'</td><td data-label="SOLD / 30 DAYS">'+i.sold30+'</td><td data-label="STOCK COST">'+usd(i.unitCost*i.onHand)+'</td><td data-label="GROSS MARGIN">'+(marginPct(i)===null?'N/A':marginPct(i)!.toFixed(1)+'%')+'</td><td data-label="DAYS OF COVER">'+(m.cover===null?'N/A':m.cover.toFixed(1))+'</td><td data-label="STATUS"><span class="inventory-pill '+(m.out?'out':m.reorder?'low':m.slow?'slow':'healthy')+'">'+(m.out?'OUT':m.reorder?'REORDER':m.slow?'SLOW':'ON TRACK')+'</span></td></tr>';}).join('')+'</tbody></table></div>'+
       '<div class="inventory-investigation"><div class="inventory-callout"><span class="section-index">STOCKOUT & REORDER INVESTIGATION</span><h3>Here’s where I’d look first.</h3><p>'+danger.length+' product(s) are at or below their entered reorder point. Those are review candidates, not automatic orders.</p></div>'+
       '<div class="inventory-priorities">'+(danger.length?danger.slice(0,5).map(i=>{const m=metrics(i);return '<article><div><strong>'+escape(i.name)+'</strong><span>'+escape(i.sku)+'</span></div><p>'+i.onHand+' on hand · '+i.sold30+' sold in 30 days · '+i.leadDays+' lead days</p><p>Illustrative 30-day replenishment target: <b>'+m.suggested+' additional units</b>. Based on constant daily demand and the entered lead time—not a purchase instruction.</p></article>';}).join(''):'<p>Nothing has crossed the supplied reorder points. Let’s not invent an emergency.</p>')+'</div></div>'+
       '<div class="inventory-boundary"><b>WHAT SOREN CANNOT KNOW YET</b><p>Sales from before the 30-day window, returns, purchase orders already in transit, actual supplier reliability, carrying costs, shelf life, seasonal demand and lost sales are not in this dataset. “Slow” means low recorded unit sales, not proven dead stock. Days of cover assumes the last 30 days represent future demand.</p></div>'+
       '<p class="inventory-schema">This importer expects an inventory snapshot, not a Clover line-items sales report. For Clover sales-only exports, we need to map the actual headers without inventing stock or costs. Template columns: <code>sku,name,unit_cost,price,on_hand,sold_30d</code> (optional: <code>reorder_point,lead_days</code>).</p>';
-    root.querySelector<HTMLButtonElement>('#inventory-reset')!.addEventListener('click',()=>{items=[...demo];source='Synthetic product catalog';draw();});
+    root.querySelector<HTMLButtonElement>('#inventory-reset')!.addEventListener('click',()=>{items=[];source='No inventory imported';draw();});
     root.querySelector<HTMLInputElement>('#inventory-file')!.addEventListener('change',async e=>{
       const file=(e.target as HTMLInputElement).files?.[0];if(!file)return;
       try{if(file.size>500000)throw Error('File is larger than 500 KB.');const normalized=await normalizeColumns(await file.text(),inventoryFields,'inventory');const parsed=parse(normalized);items=parsed;source=file.name;draw();}
