@@ -437,3 +437,13 @@ img,svg{max-width:100%}
 .financial-advanced-content .schema{margin:14px 0 0;line-height:1.6;overflow-wrap:anywhere}
 @media(max-width:850px){.data-journey{grid-template-columns:1fr 1fr 1fr}.data-journey>div{display:block}.data-journey span{margin-bottom:8px}.data-journey small{display:block;margin-top:3px}}
 @media(max-width:650px){.data-journey{gap:6px}.data-journey>div{padding:9px}.data-journey span{width:25px;height:25px;font-size:10px}.data-journey strong{font-size:9px}.data-journey small{font-size:9px}.workspace[data-page="data"] .clover-heading{flex-direction:column;align-items:stretch}.workspace[data-page="data"] .clover-heading .import-button{width:100%}.data-disclosure>summary,.financial-advanced>summary{padding:14px 43px 14px 14px}.data-disclosure>section,.data-disclosure>.clover-table-wrap{margin:0 8px 10px}.clover-retention{margin-top:15px}}
+
+/* Date labels under daily Clover sales, with responsive density. */
+.clover-chart-wrap{width:100%;min-width:0;margin-top:12px}
+.clover-chart-wrap .clover-daily-chart{margin:0}
+.clover-chart-dates{height:38px;position:relative;border:1px solid rgba(123,151,208,.35);border-top:0;border-radius:0 0 12px 12px;background:rgba(12,25,53,.7);min-width:0}
+.clover-chart-dates>span{position:absolute;top:9px;transform:translateX(-50%);white-space:nowrap;font-size:10px;font-weight:650;letter-spacing:.025em;color:#b7c8ed}
+.clover-chart-dates>span.first-date{left:8px!important;transform:none}
+.clover-chart-dates>span.last-date{left:auto!important;right:8px;transform:none}
+.clover-chart-wrap .clover-daily-chart{border-radius:12px 12px 0 0}
+@media(max-width:650px){.clover-chart-dates>span.detail-date{display:none}.clover-chart-dates{height:35px}.clover-chart-dates>span{font-size:10px}}
