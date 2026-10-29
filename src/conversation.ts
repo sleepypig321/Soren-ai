@@ -3,13 +3,11 @@ import { loadCloudImport, currentImportScope } from './import-sync';
 
 type Summary = { revenue:number; profit:number; margin:number; transactions:number; average:number; operating:number; days:number; breakEven:number|null };
 type CloverDay = { date:string; net:number };
-let activeCloverDays:CloverDay[]=[];
 type CloverFacts = {
   kind:'clover';netSales:number;days:number;firstDate:string;lastDate:string;
   recent7:number|null;prior7:number|null;highest:{date:string;net:number};lowest:{date:string;net:number};
 };
 async function cloverFacts():Promise<CloverFacts|null>{
-  activeCloverDays=[];
   const scope=currentImportScope();if(!scope)return null;
   let payload:unknown=null;
   try{payload=await loadCloudImport('clover_daily');}catch{/* Use a valid local copy if the network fails. */}
@@ -21,7 +19,6 @@ async function cloverFacts():Promise<CloverFacts|null>{
   if(Math.abs(days.reduce((n,d)=>n+d.net,0)-report.reportedNet!)>.02)return null;
   const now=new Date();const today=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-');
   const complete=days.at(-1)?.date===today?days.slice(0,-1):days;
-  activeCloverDays=complete;
   const recent=complete.slice(-7),prior=complete.slice(-14,-7);
   const total=(list:CloverDay[])=>list.reduce((n,d)=>n+d.net,0);
   const highest=complete.length?complete.reduce((a,b)=>a.net>b.net?a:b):days[0];
@@ -32,7 +29,6 @@ async function cloverFacts():Promise<CloverFacts|null>{
 }
 type Line = { role:'user'|'soren'; text:string };
 type Memory = { id:string; note:string };
-const money=(n:number)=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(n);
 const escape=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 // Render a tiny, safe subset of chat Markdown after HTML-escaping all user/model text.
 const formatChatText=(s:string)=>escape(s)
@@ -43,54 +39,6 @@ const formatChatText=(s:string)=>escape(s)
 let activePanel:HTMLElement|null=null;
 let teardown:(()=>void)|null=null;
 
-function preview(q:string,f:Summary,clover:CloverFacts|null,previousUserQuestion=''):string {
-  if(!clover&&f.days===0)return 'I do not have financial figures for this workspace yet. I can still help with retail strategy, staffing and operations. Import actual reports when you want numerical analysis.';
-  const followupPriority=/which (?:recommendation|one|step)|prioriti[sz]e first|what should i do first|why (?:that|first)/i.test(q);
-  if(followupPriority&&/(sales|revenue|traffic|growth|customer|store)/i.test(previousUserQuestion))return 'Start with the lowest-cost diagnostic: investigate your weakest days for missing stock, hours, and staffing patterns before paying for promotions. Then test one consistent checkout add-on for seven days. Why first? It targets an operational problem you can check immediately, with little or no acquisition spend. Measure daily sales and, when available, transactions; we cannot yet claim which lever will produce the largest lift.';
-  const dateMatch=q.match(/(?:since|from|starting|started|on)\s+(?:managing|working|the store|at the store|on)?\s*(?:on\s+)?(\d{4}-\d{2}-\d{2}|(?:October|Oct)\s+\d{1,2}(?:,?\s+\d{4})?)/i);
-  if(clover&&dateMatch&&/(since|change|compared|before|after|started|managing)/i.test(q)){
-    const rawDate=dateMatch[1];const iso=/^\d{4}-/.test(rawDate)?rawDate:(()=>{const m=rawDate.match(/(?:October|Oct)\s+(\d{1,2})(?:,?\s+(\d{4}))?/i);return m?(m[2]||'2026')+'-10-'+m[1].padStart(2,'0'):''})();
-    const sorted=activeCloverDays.sort((a,b)=>a.date.localeCompare(b.date));
-    const post=sorted.filter(d=>d.date>=iso),before=sorted.filter(d=>d.date<iso).slice(-post.length);
-    if(post.length&&before.length===post.length){const sum=(ds:CloverDay[])=>ds.reduce((n,d)=>n+d.net,0);const a=sum(before),b=sum(post);return 'From '+iso+' through '+post.at(-1)!.date+', reported net sales total '+money(b)+' across '+post.length+' reporting days. The immediately preceding '+before.length+' reported days total '+money(a)+'. '+(a===0?'The earlier period is zero, so a percentage comparison would mislead.':'That is '+((b/a-1)*100>=0?'+':'')+((b/a-1)*100).toFixed(1)+'% in equal-length reporting windows.')+' This is an association in timing, not proof that the management change caused it; confirm closures and promotions before attributing a cause.';}
-    return 'I can locate '+iso+' in your question, but I cannot construct equal-length before-and-after windows from the available reported dates. I will not compare mismatched periods.';
-  }
-  const wantsGrowth=/(increase|boost|improve|grow|raise|drive|more|higher|sell more|upsell|bring in).{0,40}(sales|revenue|traffic|customers|orders|basket|transactions)|(?:sales|revenue|traffic|customers|orders|basket|transactions).{0,40}(increase|boost|improve|grow|higher|more)/i.test(q);
-  if(clover&&wantsGrowth){
-    const trend=clover.recent7!==null&&clover.prior7!==null&&clover.prior7!==0
-      ?'Your last two complete seven-day windows show '+money(clover.recent7)+' versus '+money(clover.prior7)+' ('+((clover.recent7/clover.prior7-1)*100).toFixed(1)+'%). '
-      :'I can see '+money(clover.netSales)+' in reported net sales, but not enough complete comparable weeks to quantify a trend. ';
-    return 'Let’s make a sales plan, not throw discounts at the wall. '+trend+
-      'First, review your weakest complete day ('+clover.lowest.date+', '+money(clover.lowest.net)+') for opening hours, stock gaps and promotions. '+
-      'Second, test one simple add-on recommendation at checkout and track daily sales before and after—without claiming the test caused any change. '+
-      'Third, run one locally targeted offer with a clear end date and measure its results. '+
-      'We still need transaction counts to tell whether the issue is fewer purchases or smaller baskets. Do you have an orders-by-day export?';
-  }
-  if(clover){
-    if(/profit|loss|cost|margin|expense|break.?even|inventory|stock/i.test(q))
-      return 'I have '+money(clover.netSales)+' in reconciled Clover net sales across '+clover.days+' reporting days. Lovely. But we do not have verified COGS, operating expenses or inventory in this report, so I will not invent profit or stock conclusions. Which costs or records can we add next?';
-    if(/best|highest|peak|worst|lowest|slowest|weakest/i.test(q))
-      return 'Highest complete reported day: '+clover.highest.date+' ('+money(clover.highest.net)+'). Lowest: '+clover.lowest.date+' ('+money(clover.lowest.net)+'). That tells us what happened, not why. Were there changes in hours, promotions or stock availability?';
-    if(/week|trend|growth|change|compare|up|down/i.test(q)){
-      if(clover.recent7===null||clover.prior7===null)return 'I can see '+clover.days+' Clover reporting dates, but need two complete seven-day windows for a fair comparison. A partial week is not a trend, darling.';
-      if(clover.prior7===0)return 'The earlier week had zero recorded net sales. A percentage change would be misleading, so let’s investigate whether the store was closed or the report was incomplete.';
-      const change=(clover.recent7/clover.prior7-1)*100;
-      return 'The latest seven complete days brought in '+money(clover.recent7)+' versus '+money(clover.prior7)+' for the previous seven: '+(change>=0?'+':'')+change.toFixed(1)+'%. That is an observed movement, not proof of a cause. What changed operationally?';
-    }
-    return 'I have your actual Clover report: '+money(clover.netSales)+' net sales from '+clover.firstDate+' through '+clover.lastDate+'. We can examine trends and daily extremes. Transactions, COGS and expenses are missing, so I will not present synthetic profit figures as real. Which question should we investigate first?';
-  }
-  if(wantsGrowth){
-    return 'Here’s where I’d start: review low-performing days, check whether popular items are out of stock, and test one checkout add-on for a week. '+
-      'You have '+f.transactions+' transactions across '+f.days+' days with '+money(f.average)+' average transaction value in this '+(f.days===14?'sample':'report')+'. '+
-      'Track transaction count and average basket separately to see which lever moves; don’t assume a promotion is profitable without its costs. '+
-      'Do you have an item-sales report so we can pick an add-on based on what customers actually buy?';
-  }
-  if(/break.?even|profit|loss|cost|expense|margin/i.test(q))
-    return 'Evidence first: '+money(f.revenue)+' revenue, '+money(f.profit)+' gross profit ('+f.margin.toFixed(1)+'%), and '+money(f.operating)+' modeled operating result. Other operating expenses may be missing. What additional costs should we account for?';
-  if(/sales|revenue|traffic|growth|customer|transaction/i.test(q))
-    return 'We have '+f.transactions+' recorded transactions across '+f.days+' days, '+money(f.revenue)+' revenue, and '+money(f.average)+' average transaction value. None of those figures alone explains *why* sales changed. Do you have foot traffic or out-of-stock records?';
-  return 'I can work with the facts in front of me, but the full Meta model is still in gated testing. We have '+money(f.revenue)+' recorded revenue and '+f.margin.toFixed(1)+'% gross margin. Ask me a focused question, or use “Remember: ...” to save a business fact.';
-}
 async function fetchHistory(userId:string,businessId:string|null):Promise<Line[]> {
   let query=supabase.from('conversation_messages').select('role,content').eq('user_id',userId).order('created_at',{ascending:false}).limit(50);
   query=businessId?query.eq('business_id',businessId):query.is('business_id',null);
@@ -197,7 +145,6 @@ export async function openSorenConversation(facts:Summary,source:string) {
     if(!question||submit.disabled)return;
     submit.disabled=true;input.value='';
     const userLine:Line={role:'user',text:question};
-    const previousUserQuestion=[...lines].reverse().find(line=>line.role==='user')?.text??'';
     const prior=lines.slice(-6).map(line=>({role:line.role==='soren'?'assistant':'user',content:line.text.slice(0,900)}));
     lines.push(userLine);draw();
     try{
@@ -215,7 +162,7 @@ export async function openSorenConversation(facts:Summary,source:string) {
           const {data,error}=await supabase.from('business_memories').insert({user_id:userId,business_id:businessId,note}).select('id,note').single();
           if(error)throw error;
           notes.unshift(data as Memory);drawMemories();
-          reply='Noted. I saved that to '+businessName+' memory. You can review or delete it any time.'+(followup?' '+preview(note+'. '+followup,facts,clover,previousUserQuestion):'');
+          reply='Noted. I saved that to '+businessName+' memory. You can review or delete it any time.'+(followup?' Ask your follow-up as a separate message so I can give you a real AI answer.':'');
         }
       }else{
         const {data:{session}}=await supabase.auth.getSession();
@@ -243,8 +190,7 @@ export async function openSorenConversation(facts:Summary,source:string) {
         }
         const res=await fetch('/api/chat',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+session.access_token},body:JSON.stringify({question,facts:clover??(facts.days>0?facts:null),history:prior,memories:[...dnaContext,...notes.map(note=>note.note)].slice(0,8)})});
         const response=await res.json() as {answer?:string;error?:string;demo?:boolean};
-        if(res.status===503&&response.demo)reply=preview(question,facts,clover,previousUserQuestion);
-        else if(res.ok&&response.answer)reply=response.answer;
+        if(res.ok&&response.answer)reply=response.answer;
         else reply=response.error||'Soren is temporarily unavailable.';
       }
       const line:Line={role:'soren',text:reply};
