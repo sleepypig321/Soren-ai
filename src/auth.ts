@@ -25,14 +25,12 @@ function authScreen(message = '') {
       <span class="landing-header-note">YOUR BUSINESS. SEEN CLEARLY.</span>
       <a href="#auth-access" class="landing-header-link">GET STARTED ↗</a>
     </header>
-    <div class="landing-layout">
-      <section class="landing-story" aria-labelledby="landing-title">
-        <div class="landing-index"><span class="landing-indicator"></span> RETAIL INTELLIGENCE / BUILT FOR REAL OWNERS</div>
-        <h1 id="landing-title">Your numbers<br/>have a <em>story.</em><br/><span>Meet the mind</span><br/>that listens.</h1>
-        <p class="landing-lead">Most dashboards show you what happened. Soren helps you investigate what matters next—with grounded analysis, honest answers, and a conversation that stays with you.</p>
-        <div class="landing-motto"><span>◉</span><p>Less guessing. More knowing.<br/><strong>And yes, you can actually talk to Soren.</strong></p></div>
-        <div class="landing-scroll-note">01 / FROM DATA TO DECISIONS <span>↓</span></div>
-      </section>
+    <div class="landing-intro"><span class="landing-index"><span class="landing-indicator"></span> INTELLIGENCE WITH INTENTION</span><h1>Meet <em>Soren.</em></h1><p>Business intelligence that listens, investigates, and remembers.</p></div>
+    <div class="landing-orbit-layout" aria-label="What Soren can do and how to sign in">
+      <div class="landing-feature-column landing-feature-left">
+        <article class="landing-orbit-box"><span class="landing-feature-number">01 / RETAIL SIGNALS</span><span class="landing-orbit-glyph">⌁</span><h3>See what matters.</h3><p>Explore sales trends and investigate unusual days with evidence—not guesswork.</p></article>
+        <article class="landing-orbit-box"><span class="landing-feature-number">02 / YOUR DATA</span><span class="landing-orbit-glyph">▤</span><h3>Bring your reports.</h3><p>Import Clover and CSV data with flexible column matching.</p></article>
+      </div>
       <section class="auth-card" id="auth-access" aria-label="Sign in or create your Soren account">
         <img class="auth-emblem" src="/soren-dna.png" alt="Soren's luminous DNA emblem"/>
         <div class="auth-overline">SOREN / ACCESS PROTOCOL</div>
@@ -50,16 +48,12 @@ function authScreen(message = '') {
         <p class="auth-footnote">Your business data belongs in your private workspace. Never share passwords or secret API keys.</p>
       </section>
     </div>
-    <section class="landing-capabilities" aria-label="What Soren can do">
-      <div class="landing-section-intro"><p>THE SOREN DIFFERENCE / 001—004</p><h2>Not another dashboard.<br/><em>A sharper perspective.</em></h2></div>
-      <div class="landing-feature-grid">
-        <article class="landing-feature"><span class="landing-feature-icon">⌁</span><span class="landing-feature-number">01 / SEE</span><h3>Find your retail signals.</h3><p>Explore sales patterns, spot unusual days, and follow the evidence behind your store's performance.</p></article>
-        <article class="landing-feature"><span class="landing-feature-icon">▤</span><span class="landing-feature-number">02 / CONNECT</span><h3>Bring your own data.</h3><p>Import CSV reports, including Clover exports. Match unfamiliar columns without rewriting your spreadsheets.</p></article>
-        <article class="landing-feature"><span class="landing-feature-icon">◈</span><span class="landing-feature-number">03 / UNDERSTAND</span><h3>Ask better questions.</h3><p>Talk through business decisions with Soren. He separates what the data proves from what needs investigating.</p></article>
-        <article class="landing-feature"><span class="landing-feature-icon">✧</span><span class="landing-feature-number">04 / REMEMBER</span><h3>Build on every conversation.</h3><p>Keep a business profile, saved context, and private conversation history across your workspace.</p></article>
+      <div class="landing-feature-column landing-feature-right">
+        <article class="landing-orbit-box"><span class="landing-feature-number">03 / CONVERSATION</span><span class="landing-orbit-glyph">◈</span><h3>Talk to your data.</h3><p>Ask Soren questions and get direct answers with clear limits and next steps.</p></article>
+        <article class="landing-orbit-box"><span class="landing-feature-number">04 / CONTINUITY</span><span class="landing-orbit-glyph">✧</span><h3>A mind with context.</h3><p>Private business profiles, saved notes, and conversation history stay together.</p></article>
       </div>
-    </section>
-    <footer class="landing-footer"><span>SOREN AI © 2026</span><span>BUILT FOR OWNERS WHO WANT THE TRUTH, NOT JUST A PRETTY CHART.</span><a href="#auth-access">ENTER SOREN ↑</a></footer>
+    </div>
+    <div class="landing-orbit-footer"><span>SOREN AI / RETAIL COMMAND CENTER</span><span>PRIVATE WORKSPACES · EVIDENCE-FIRST THINKING</span></div>
   </main>`;
   let mode: 'login' | 'signup' = 'login';
   const feedback = root.querySelector<HTMLElement>('#auth-feedback')!;
