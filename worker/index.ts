@@ -112,13 +112,20 @@ async function chat(request: Request, env: Env): Promise<Response> {
     const upstream = await fetch(MODEL_URL,{
       method:'POST',
       headers:{authorization:'Bearer '+env.MODEL_API_KEY,'content-type':'application/json'},
-      body:JSON.stringify({model:'muse-spark-1.3',messages,max_completion_tokens:900,store:false}),
+      body:JSON.stringify({model:'muse-spark-1.3',messages,reasoning_effort:'low',max_completion_tokens:2200,store:false}),
       signal:AbortSignal.timeout(40000)
     });
     if (!upstream.ok) return json({error:'Meta model request failed. Please try again later.'},502);
-    const output = await upstream.json() as {choices?: Array<{message?: {content?: string}}>};
-    const answer = output.choices?.[0]?.message?.content;
-    if (typeof answer !== 'string' || !answer.trim()) return json({error:'Meta returned no usable answer.'},502);
+    const output = await upstream.json() as { choices?: Array<{ finish_reason?: string; message?: { content?: string | Array<{type?: string; text?: string}> } }> };
+    const choice = output.choices?.[0];
+    const content = choice?.message?.content;
+    const answer = typeof content === 'string' ? content :
+      Array.isArray(content) ? content.filter(part => part.type === 'text' && typeof part.text === 'string').map(part => part.text).join('\\n') : '';
+    if (!answer.trim()) {
+      // Never expose the upstream response: it may contain private reasoning or business data.
+      const exhausted = choice?.finish_reason === 'length';
+      return json({error:exhausted ? 'Meta ran out of response tokens before answering. Please retry.' : 'Meta generated no visible reply. Please retry.'},502);
+    }
     return json({answer:answer.slice(0,8000),demo:false});
   } catch { return json({error:'Model service temporarily unavailable.'},502); }
 }
