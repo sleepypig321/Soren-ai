@@ -2,27 +2,49 @@ import { normalizeColumns, splitCsv, type FieldSpec } from './column-map';
 import { loadCloudImport, saveCloudImport, removeCloudImport, canSyncImports } from './import-sync';
 type Day={date:string;net:number;gross:number|null;discount:number|null};
 type CloverReport={days:Day[];reportedNet:number;period:string;fileName:string;verifiedTotal?:boolean};
+type ArchiveEntry={id:string;uploadedAt:string;report:CloverReport};
 let current:CloverReport|null=null;
+let history:ArchiveEntry[]=[];
 let scope='';
 let enteredCogs='';
 let dataRevision=0;
 let openPanes=new Set<string>(['investigator']);
 const storageKey=(id:string)=>'soren:clover-daily:v1:'+id;
-function readSaved(id:string):{report:CloverReport;cogs:string}|null {
-  try {
-    const value=localStorage.getItem(storageKey(id));if(!value)return null;
-    const saved=JSON.parse(value) as {report:CloverReport;cogs:string};
-    if(!saved.report||!Array.isArray(saved.report.days)||saved.report.days.length<1||saved.report.days.length>366)return null;
-    if(!Number.isFinite(saved.report.reportedNet)||!saved.report.days.every(d=>/^\d{4}-\d{2}-\d{2}$/.test(d.date)&&Number.isFinite(d.net)&&(d.gross===null||Number.isFinite(d.gross))&&(d.discount===null||Number.isFinite(d.discount))))return null;
-    if(Math.abs(sum(saved.report.days)-saved.report.reportedNet)>.02)return null;
-    const cogs=typeof saved.cogs==='string'&&(saved.cogs===''||/^\d+(\.\d+)?$/.test(saved.cogs)&&Number(saved.cogs)<=1e9)?saved.cogs:'';
-    return {report:saved.report,cogs};
-  } catch {return null;}
+function validReport(report:CloverReport|undefined,maxRows=366):report is CloverReport{
+  return !!report&&Array.isArray(report.days)&&report.days.length>0&&report.days.length<=maxRows&&
+    Number.isFinite(report.reportedNet)&&report.days.every(day=>/^\d{4}-\d{2}-\d{2}$/.test(day.date)&&Number.isFinite(day.net)&&
+      (day.gross===null||Number.isFinite(day.gross))&&(day.discount===null||Number.isFinite(day.discount)))&&
+    Math.abs(report.days.reduce((n,day)=>n+day.net,0)-report.reportedNet)<=.02;
 }
-function saveCurrent():boolean {
+function combineReports(entries:ArchiveEntry[]):CloverReport|null{
+  if(!entries.length)return null;
+  const merged=new Map<string,Day>();
+  for(const entry of entries)for(const day of entry.report.days)merged.set(day.date,day);
+  const days=[...merged.values()].sort((a,b)=>a.date.localeCompare(b.date));
+  return {days,reportedNet:sum(days),period:days[0].date+' through '+days.at(-1)!.date,
+    fileName:entries.length===1?entries[0].report.fileName:entries.length+' saved Clover reports',verifiedTotal:false};
+}
+function readSaved(id:string):{report:CloverReport;cogs:string;history:ArchiveEntry[]}|null{
+  try{
+    const raw=localStorage.getItem(storageKey(id));if(!raw)return null;
+    return normalizeSaved(JSON.parse(raw));
+  }catch{return null;}
+}
+function normalizeSaved(payload:unknown):{report:CloverReport;cogs:string;history:ArchiveEntry[]}|null{
+  const value=payload as {report?:CloverReport;cogs?:string;history?:ArchiveEntry[]}|null;
+  if(!value||!validReport(value.report,10000))return null;
+  const loaded=Array.isArray(value.history)&&value.history.length<=100&&value.history.every(entry=>
+    entry&&typeof entry.id==='string'&&typeof entry.uploadedAt==='string'&&validReport(entry.report))
+    ?value.history:[{id:'legacy',uploadedAt:'Previously imported',report:value.report}];
+  const report=combineReports(loaded);
+  if(!report)return null;
+  const cogs=typeof value.cogs==='string'&&(/^(?:|\d+(?:\.\d+)?)$/.test(value.cogs))&&Number(value.cogs||'0')<=1e9?value.cogs:'';
+  return {report,cogs,history:loaded};
+}
+function saveCurrent():boolean{
   if(!scope||scope.startsWith('signed-out:'))return false;
   try{
-    if(current)localStorage.setItem(storageKey(scope),JSON.stringify({report:current,cogs:enteredCogs}));
+    if(current)localStorage.setItem(storageKey(scope),JSON.stringify({report:current,cogs:enteredCogs,history}));
     else localStorage.removeItem(storageKey(scope));
     return true;
   }catch{return false;}
@@ -111,8 +133,8 @@ async function parseDailyReport(raw:string,fileName:string):Promise<CloverReport
 }
 export function renderCloverImport(container:HTMLElement,accountScope:string){
   if(scope!==accountScope){
-    scope=accountScope;current=null;enteredCogs='';dataRevision++;openPanes=new Set(['investigator']);
-    if(!scope.startsWith('signed-out:')){const saved=readSaved(scope);if(saved){current=saved.report;enteredCogs=saved.cogs;}}
+    scope=accountScope;current=null;history=[];enteredCogs='';dataRevision++;openPanes=new Set(['investigator']);
+    if(!scope.startsWith('signed-out:')){const saved=readSaved(scope);if(saved){current=saved.report;history=saved.history;enteredCogs=saved.cogs;}}
   }
   const paint=()=>{
     const report=current;
@@ -141,6 +163,7 @@ export function renderCloverImport(container:HTMLElement,accountScope:string){
       const grossMargin=grossProfit!==null&&report.reportedNet!==0?grossProfit/report.reportedNet*100:null;
       results.innerHTML='<div class="clover-retention"><span>● DEVICE COPY / PRIVATE CLOUD SYNC WHEN AVAILABLE</span><button type="button" class="reset-button" id="clover-forget">REMOVE SAVED IMPORT</button></div><div class="clover-summary"><div><span>RECONCILED NET SALES</span><strong>'+money(report.reportedNet)+'</strong></div><div><span>REPORTING DAYS</span><strong>'+days.length+'</strong></div><div><span>LAST 7 VS PRIOR 7</span><strong>'+(variation===null?'N/A':(variation>=0?'+':'')+variation.toFixed(1)+'%')+'</strong></div></div>'+
         '<p class="clover-reconcile">'+(report.verifiedTotal?'✓ Sum of daily figures reconciles to Clover’s report total. ':'Mapped daily report: total is the sum of imported daily rows; no independent Clover summary was supplied. ')+''+(last.date===today?'The current date is excluded from the seven-day comparison because it may be incomplete.':'Seven-day comparisons assume all reported days are complete.')+'</p>'+
+        '<div class="clover-archive"><div><span class="section-index">REPORT HISTORY / '+history.length+' UPLOADS</span><h4>Your saved report library</h4><p>Each CSV is retained privately. Overlapping dates use the most recently uploaded report once; totals are never double-counted.</p></div><div class="clover-archive-list">'+history.map(entry=>'<div class="clover-archive-row"><div><strong>'+esc(entry.report.fileName)+'</strong><small>'+esc(entry.report.period)+' · '+entry.report.days.length+' days · '+esc(entry.uploadedAt)+'</small></div><button type="button" class="reset-button" data-remove-report="'+esc(entry.id)+'" aria-label="Remove saved report">REMOVE</button></div>').join('')+'</div></div>'+
         '<div class="clover-chart-wrap"><div class="clover-daily-chart" role="group" aria-label="Daily net sales by date">'+days.map(d=>'<div role="img" aria-label="'+esc(d.date+': '+money(d.net))+'" title="'+esc(d.date+': '+money(d.net))+'"><span style="height:'+Math.max(2,Math.max(0,d.net)/max*100)+'%"></span></div>').join('')+'</div><div class="clover-chart-dates" aria-label="Chart date axis">'+days.map((d,i)=>(i===0||i===days.length-1||i%7===0)?'<span class="'+(i!==0&&i!==days.length-1?'detail-date ':'')+(i===0?'first-date':i===days.length-1?'last-date':'')+'" style="left:'+((i+.5)/days.length*100).toFixed(2)+'%">'+new Date(d.date+'T00:00:00Z').toLocaleDateString('en-US',{month:'short',day:'numeric',timeZone:'UTC'})+'</span>':'').join('')+'</div></div>'+
         '<details class="data-disclosure" data-pane="investigator"><summary><span>YOUR SALES ANALYSIS</span><strong>Retail performance investigator</strong><small>Week-over-week trends and standout dates</small></summary><section class="clover-investigator" aria-label="Retail performance investigator"><div class="clover-investigator-top"><span class="section-index">SOREN / RETAIL PERFORMANCE INVESTIGATOR</span><h4>Here’s what caught my attention.</h4><p>Observed patterns from your authorized Clover sales report, not a forecast or a diagnosis.</p></div><div class="clover-investigator-grid">'+
         '<article><span>07 DAYS VS PREVIOUS 07</span><strong>'+trendLabel+'</strong><p>'+trendDescription+'</p><small>Periods end '+(complete.at(-1)?.date||'N/A')+'. A current-day partial report is excluded.</small></article>'+
@@ -161,12 +184,26 @@ export function renderCloverImport(container:HTMLElement,accountScope:string){
       details.open=openPanes.has(pane);
       details.addEventListener('toggle',()=>{if(details.open)openPanes.add(pane);else openPanes.delete(pane);});
     });
+    container.querySelectorAll<HTMLButtonElement>('[data-remove-report]').forEach(button=>button.addEventListener('click',async()=>{
+      const id=button.dataset.removeReport!;
+      const remaining=history.filter(entry=>entry.id!==id);
+      if(remaining.length===history.length)return;
+      const next=combineReports(remaining);
+      try{
+        if(canSyncImports()){
+          if(next)await saveCloudImport('clover_daily',{report:next,cogs:'',history:remaining});
+          else await removeCloudImport('clover_daily');
+        }
+        history=remaining;current=next;enteredCogs='';dataRevision++;saveCurrent();paint();
+        queueMicrotask(()=>window.dispatchEvent(new Event('soren:clover-changed')));
+      }catch(error){container.querySelector<HTMLElement>('#clover-feedback')!.textContent=error instanceof Error?error.message:'Could not update your saved report history.';}
+    }));
     container.querySelector<HTMLButtonElement>('#clover-forget')?.addEventListener('click',async()=>{
       const targetScope=scope;
       try{
         if(canSyncImports())await removeCloudImport('clover_daily');
         if(targetScope!==scope)return;
-        dataRevision++;current=null;enteredCogs='';saveCurrent();paint();queueMicrotask(()=>window.dispatchEvent(new Event('soren:clover-changed')));
+        dataRevision++;current=null;history=[];enteredCogs='';saveCurrent();paint();queueMicrotask(()=>window.dispatchEvent(new Event('soren:clover-changed')));
       }catch(err){container.querySelector<HTMLElement>('#clover-feedback')!.textContent=err instanceof Error?err.message:'Unable to remove the cloud copy.';}
     });
     container.querySelector<HTMLInputElement>('#clover-cogs')?.addEventListener('change',e=>{
@@ -175,7 +212,7 @@ export function renderCloverImport(container:HTMLElement,accountScope:string){
       if(value!==''&&(!Number.isFinite(Number(value))||Number(value)<0||Number(value)>1e9)){
         const status=container.querySelector<HTMLElement>('#clover-feedback')!;status.textContent='Enter a valid nonnegative COGS amount, or leave it blank if unknown.';return;
       }
-      dataRevision++;enteredCogs=value;saveCurrent();paint();if(current&&canSyncImports()){const targetScope=scope;void saveCloudImport('clover_daily',{report:current,cogs:enteredCogs}).catch(err=>{if(scope===targetScope)container.querySelector<HTMLElement>('#clover-feedback')!.textContent=err.message;});}
+      dataRevision++;enteredCogs=value;saveCurrent();paint();if(current&&canSyncImports()){const targetScope=scope;void saveCloudImport('clover_daily',{report:current,cogs:enteredCogs,history}).catch(err=>{if(scope===targetScope)container.querySelector<HTMLElement>('#clover-feedback')!.textContent=err.message;});}
     });
     container.querySelector<HTMLButtonElement>('#clover-clear-cost')?.addEventListener('click',()=>{dataRevision++;enteredCogs='';saveCurrent();paint();if(current&&canSyncImports())void saveCloudImport('clover_daily',{report:current,cogs:enteredCogs}).catch(()=>{});});
     container.querySelector<HTMLButtonElement>('#clover-evidence-template')?.addEventListener('click',()=>{
@@ -187,7 +224,7 @@ export function renderCloverImport(container:HTMLElement,accountScope:string){
     container.querySelector<HTMLInputElement>('#clover-upload')!.addEventListener('change',async e=>{
       const f=(e.target as HTMLInputElement).files?.[0];if(!f)return;
       const status=container.querySelector<HTMLElement>('#clover-feedback')!;
-      try{if(f.size>500000)throw Error('File exceeds 500 KB.');const parsed=await parseDailyReport(await f.text(),f.name);dataRevision++;current=parsed;enteredCogs='';const saved=saveCurrent();paint();queueMicrotask(()=>window.dispatchEvent(new Event('soren:clover-changed')));if(canSyncImports()){const targetScope=scope;void saveCloudImport('clover_daily',{report:parsed,cogs:''}).then(()=>{if(scope===targetScope)container.querySelector<HTMLElement>('#clover-feedback')!.textContent='Clover import saved privately to your business workspace and this browser.';}).catch(err=>{if(scope===targetScope)container.querySelector<HTMLElement>('#clover-feedback')!.textContent=err.message+' Your device copy remains available.';});}if(!saved)container.querySelector<HTMLElement>('#clover-feedback')!.textContent='Imported for this session, but this browser could not save the report. Storage may be disabled or full.';if(saved)container.querySelector<HTMLElement>('#clover-feedback')!.textContent='Imported '+parsed.days.length+' reporting days from '+parsed.fileName+'.';}
+      try{if(f.size>500000)throw Error('File exceeds 500 KB.');const parsed=await parseDailyReport(await f.text(),f.name);if(history.length>=100)throw Error('Your report library holds 100 uploads. Remove an obsolete report before adding another.');history.push({id:crypto.randomUUID(),uploadedAt:new Date().toLocaleDateString(),report:parsed});dataRevision++;current=combineReports(history);enteredCogs='';const saved=saveCurrent();paint();queueMicrotask(()=>window.dispatchEvent(new Event('soren:clover-changed')));if(canSyncImports()){const targetScope=scope;void saveCloudImport('clover_daily',{report:current,cogs:'',history}).then(()=>{if(scope===targetScope)container.querySelector<HTMLElement>('#clover-feedback')!.textContent='Clover import saved privately to your business workspace and this browser.';}).catch(err=>{if(scope===targetScope)container.querySelector<HTMLElement>('#clover-feedback')!.textContent=err.message+' Your device copy remains available.';});}if(!saved)container.querySelector<HTMLElement>('#clover-feedback')!.textContent='Imported for this session, but this browser could not save the report. Storage may be disabled or full.';if(saved)container.querySelector<HTMLElement>('#clover-feedback')!.textContent='Imported '+parsed.days.length+' reporting days from '+parsed.fileName+'.';}
       catch(err){status.textContent=err instanceof Error?err.message:'Could not read Clover report.';}
     });
   };
@@ -197,13 +234,11 @@ export function renderCloverImport(container:HTMLElement,accountScope:string){
     const initialRevision=dataRevision;
     void loadCloudImport('clover_daily').then(async payload=>{
       if(scope!==targetScope||dataRevision!==initialRevision)return;
-      const cloud=payload as {report?:CloverReport;cogs?:string}|null;
-      if(cloud?.report&&Array.isArray(cloud.report.days)&&cloud.report.days.length>0&&cloud.report.days.length<=366&&
-        Number.isFinite(cloud.report.reportedNet)&&cloud.report.days.every(day=>typeof day.date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(day.date)&&Number.isFinite(day.net))&&
-        Math.abs(sum(cloud.report.days)-cloud.report.reportedNet)<=.02){
-        current=cloud.report;enteredCogs=typeof cloud.cogs==='string'&&(/^(?:|\d+(?:\.\d+)?)$/.test(cloud.cogs))&&Number(cloud.cogs||'0')<=1e9?cloud.cogs:'';
+      const cloud=normalizeSaved(payload);
+      if(cloud){
+        current=cloud.report;history=cloud.history;enteredCogs=cloud.cogs;
         saveCurrent();paint();
-        container.querySelector<HTMLElement>('#clover-feedback')!.textContent='Restored from your private business workspace.';
+        container.querySelector<HTMLElement>('#clover-feedback')!.textContent='Restored '+history.length+' report(s) from your private business workspace.';
       }else if(!payload&&current){
         await saveCloudImport('clover_daily',{report:current,cogs:enteredCogs});
         if(scope===targetScope)container.querySelector<HTMLElement>('#clover-feedback')!.textContent='Previously saved report synced privately to your business workspace.';
