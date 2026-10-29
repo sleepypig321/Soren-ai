@@ -35,6 +35,17 @@ let activePanel:HTMLElement|null=null;
 let teardown:(()=>void)|null=null;
 
 function preview(q:string,f:Summary,clover:CloverFacts|null):string {
+  const wantsGrowth=/(increase|boost|improve|grow|raise|drive|more|higher|sell more|upsell|bring in).{0,40}(sales|revenue|traffic|customers|orders|basket|transactions)|(?:sales|revenue|traffic|customers|orders|basket|transactions).{0,40}(increase|boost|improve|grow|higher|more)/i.test(q);
+  if(clover&&wantsGrowth){
+    const trend=clover.recent7!==null&&clover.prior7!==null&&clover.prior7!==0
+      ?'Your last two complete seven-day windows show '+money(clover.recent7)+' versus '+money(clover.prior7)+' ('+((clover.recent7/clover.prior7-1)*100).toFixed(1)+'%). '
+      :'I can see '+money(clover.netSales)+' in reported net sales, but not enough complete comparable weeks to quantify a trend. ';
+    return 'Let’s make a sales plan, not throw discounts at the wall. '+trend+
+      'First, review your weakest complete day ('+clover.lowest.date+', '+money(clover.lowest.net)+') for opening hours, stock gaps and promotions. '+
+      'Second, test one simple add-on recommendation at checkout and track daily sales before and after—without claiming the test caused any change. '+
+      'Third, run one locally targeted offer with a clear end date and measure its results. '+
+      'We still need transaction counts to tell whether the issue is fewer purchases or smaller baskets. Do you have an orders-by-day export?';
+  }
   if(clover){
     if(/profit|loss|cost|margin|expense|break.?even|inventory|stock/i.test(q))
       return 'I have '+money(clover.netSales)+' in reconciled Clover net sales across '+clover.days+' reporting days. Lovely. But we do not have verified COGS, operating expenses or inventory in this report, so I will not invent profit or stock conclusions. Which costs or records can we add next?';
@@ -47,6 +58,12 @@ function preview(q:string,f:Summary,clover:CloverFacts|null):string {
       return 'The latest seven complete days brought in '+money(clover.recent7)+' versus '+money(clover.prior7)+' for the previous seven: '+(change>=0?'+':'')+change.toFixed(1)+'%. That is an observed movement, not proof of a cause. What changed operationally?';
     }
     return 'I have your actual Clover report: '+money(clover.netSales)+' net sales from '+clover.firstDate+' through '+clover.lastDate+'. We can examine trends and daily extremes. Transactions, COGS and expenses are missing, so I will not present synthetic profit figures as real. Which question should we investigate first?';
+  }
+  if(wantsGrowth){
+    return 'Here’s where I’d start: review low-performing days, check whether popular items are out of stock, and test one checkout add-on for a week. '+
+      'You have '+f.transactions+' transactions across '+f.days+' days with '+money(f.average)+' average transaction value in this '+(f.days===14?'sample':'report')+'. '+
+      'Track transaction count and average basket separately to see which lever moves; don’t assume a promotion is profitable without its costs. '+
+      'Do you have an item-sales report so we can pick an add-on based on what customers actually buy?';
   }
   if(/break.?even|profit|loss|cost|expense|margin/i.test(q))
     return 'Evidence first: '+money(f.revenue)+' revenue, '+money(f.profit)+' gross profit ('+f.margin.toFixed(1)+'%), and '+money(f.operating)+' modeled operating result. Other operating expenses may be missing. What additional costs should we account for?';
