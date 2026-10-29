@@ -54,7 +54,7 @@ function validCloverFacts(value:unknown):boolean{
   const validMoney=(x:unknown)=>typeof x==='number'&&Number.isFinite(x)&&Math.abs(x)<=1e9;
   const validDay=(x:unknown)=>x!==null&&typeof x==='object'&&!Array.isArray(x)&&
     validDate((x as Record<string,unknown>).date)&&validMoney((x as Record<string,unknown>).net);
-  return validMoney(v.netSales)&&Number.isInteger(v.days)&&(v.days as number)>=1&&(v.days as number)<=366&&
+  return validMoney(v.netSales)&&Number.isInteger(v.days)&&(v.days as number)>=1&&(v.days as number)<=10000&&
     validDate(v.firstDate)&&validDate(v.lastDate)&&
     (v.recent7===null||validMoney(v.recent7))&&(v.prior7===null||validMoney(v.prior7))&&
     validDay(v.highest)&&validDay(v.lowest);
