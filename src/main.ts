@@ -6,6 +6,7 @@ import { initAuth, addAccountToolbar, getActiveBusinessId, getActiveUserId } fro
 import { investigateRetail } from './investigations';
 import { renderInventory } from './inventory';
 import { renderCloverImport } from './clover-import';
+import { renderPredictionCalculator } from './prediction-ui';
 
 type Sale = { date: string; revenue: number; transactions: number; cogs: number };
 type FinancialEntry={id:string;uploadedAt:string;fileName:string;sales:Sale[]};
@@ -245,7 +246,7 @@ function render(){
         '<section class="inventory-deck" id="inventory" aria-label="Inventory intelligence"></section>'+
         '<section class="data-deck" id="data"><header class="data-heading"><span class="section-index">03 / DATA WORKSPACE</span><h2>Your data. <em>Actual intelligence.</em></h2><p>One report at a time. Start with Clover, see your results, then add more detail when you have it. Imports sync privately to your selected business when online.</p></header>'+
         '<div class="data-journey"><div><span>01</span><strong>IMPORT</strong><small>Choose a sales report</small></div><div><span>02</span><strong>REVIEW</strong><small>Verify the figures</small></div><div><span>03</span><strong>INVESTIGATE</strong><small>Follow the evidence</small></div></div>'+
-        '<section class="clover-import" aria-label="Clover daily import"></section>'+
+        '<section class="clover-import" aria-label="Clover daily import"></section>'+\n        '<section class="prediction-lab" aria-label="Revenue scenario calculator"></section>'+
         '<details class="financial-advanced"><summary><span>ALTERNATIVE FORMAT</span><strong>Using a custom financial CSV?</strong><small>Advanced import and expense input</small></summary><div class="financial-advanced-content"><p>For manually prepared daily reports with the required columns. This is separate from the Clover importer above.</p><div class="data-controls"><div><label for="fixed">FIXED EXPENSES / SAME PERIOD ($)</label><input id="fixed" type="number" min="0" step="1" value="'+(hasFinancial?fixedCosts:'')+'" placeholder="Optional after import"/><small>COGS is already accounted for. Other expenses may still be missing.</small></div><label class="import-button">IMPORT FINANCIAL CSV ↑<input id="file" type="file" accept=".csv,text/csv" hidden/></label><button id="reset" class="reset-button">CLEAR FINANCIAL DATA ↺</button></div><p class="schema">CSV FORMAT: <code>date,revenue,transactions,cogs</code> · '+(sales.length===0?'NO FINANCIAL REPORT IMPORTED':'SAVED: '+escapeHTML(source))+' · '+escapeHTML(financialCloudStatus)+'</p><div class="clover-archive"><span class="section-index">CUSTOM FINANCIAL REPORT HISTORY / '+financialHistory.length+' UPLOADS</span><div class="clover-archive-list">'+financialHistory.map(entry=>'<div class="clover-archive-row"><div><strong>'+escapeHTML(entry.fileName)+'</strong><small>'+entry.sales.length+' rows · '+escapeHTML(entry.uploadedAt)+'</small></div><button type="button" class="reset-button" data-remove-financial="'+escapeHTML(entry.id)+'">REMOVE</button></div>').join('')+'</div></div></div></details></section>'+
         '<footer>© SOREN / PROTOTYPE 0.2 <span>INTELLIGENCE WITH INTENTION · BUSINESS INTELLIGENCE</span></footer>'+
       '</div></div>';
@@ -283,6 +284,7 @@ function render(){
     catch(err){alert(err instanceof Error?err.message:'Unable to read CSV');}
   });
   if(activePage==='data')renderCloverImport(document.querySelector<HTMLElement>('.clover-import')!, (getActiveUserId()??'signed-out')+':'+(getActiveBusinessId()??'personal'));
+  if(activePage==='data')renderPredictionCalculator(document.querySelector<HTMLElement>('.prediction-lab')!,salesDays,salesSource);
   if(activePage==='inventory')renderInventory(document.querySelector<HTMLElement>('.inventory-deck')!, (getActiveUserId()??'signed-out')+':'+(getActiveBusinessId()??'personal'));
   const beginConversation = () => openSorenConversation(s, source);
   document.querySelector<HTMLButtonElement>('#investigate-chat')?.addEventListener('click', beginConversation);
