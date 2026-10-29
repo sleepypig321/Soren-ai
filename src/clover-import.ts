@@ -150,13 +150,14 @@ export function renderCloverImport(container:HTMLElement,accountScope:string){
       const recent=complete.slice(-7),prior=complete.slice(-14,-7);
       const avg=(xs:Day[])=>xs.length?sum(xs)/xs.length:0;
       const variation=prior.length&&avg(prior)>0?(avg(recent)/avg(prior)-1)*100:null;
-      const comparisonReady=recent.length===7&&prior.length===7;
+      const comparedDays=[...prior,...recent];
+      const comparisonReady=comparedDays.length===14&&comparedDays.every((day,i)=>i===0||Date.parse(day.date+'T00:00:00Z')-Date.parse(comparedDays[i-1].date+'T00:00:00Z')===86400000);
       const highDay=complete.length?complete.reduce((a,b)=>a.net>b.net?a:b):null;
       const lowDay=complete.length?complete.reduce((a,b)=>a.net<b.net?a:b):null;
       const recentNet=sum(recent),priorNet=sum(prior);
       const comparisonChange=comparisonReady&&priorNet>0?(recentNet/priorNet-1)*100:null;
       const trendLabel=!comparisonReady?'MORE HISTORY NEEDED':priorNet===0?'BASELINE IS ZERO':comparisonChange===null?'NOT CALCULABLE':comparisonChange>10?'REVENUE INCREASE':comparisonChange< -10?'REVENUE DECREASE':'RELATIVELY STEADY';
-      const trendDescription=!comparisonReady?'I need fourteen complete reporting dates to compare two seven-day periods responsibly.':priorNet===0?'The earlier week recorded zero net sales; a percentage change would be misleading.':'The most recent complete seven days recorded '+money(recentNet)+' compared with '+money(priorNet)+' in the preceding seven days. The change is '+(comparisonChange!>=0?'+':'')+comparisonChange!.toFixed(1)+'%.';
+      const trendDescription=!comparisonReady?'I need fourteen consecutive complete calendar dates to compare two seven-day periods responsibly. Missing dates are not treated as zero sales.':priorNet===0?'The earlier week recorded zero net sales; a percentage change would be misleading.':'The most recent complete seven days recorded '+money(recentNet)+' compared with '+money(priorNet)+' in the preceding seven days. The change is '+(comparisonChange!>=0?'+':'')+comparisonChange!.toFixed(1)+'%.';
       const cogsProvided=enteredCogs.trim()!=='';
       const cogs=cogsProvided?Number(enteredCogs):null;
       const grossProfit=cogs===null?null:report.reportedNet-cogs;
