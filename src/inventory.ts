@@ -1,3 +1,4 @@
+import { normalizeColumns, type FieldSpec } from './column-map';
 export type InventoryItem={sku:string;name:string;unitCost:number;price:number;onHand:number;sold30:number;reorderPoint:number;leadDays:number};
 const demo:InventoryItem[]=[
 {sku:'DEMO-101',name:'Sapphire Glass Piece',unitCost:21,price:49,onHand:4,sold30:18,reorderPoint:5,leadDays:7},
@@ -40,6 +41,16 @@ function parse(text:string):InventoryItem[]{
     return {sku,name,unitCost,price,onHand,sold30,reorderPoint,leadDays};
   });
 }
+const inventoryFields:FieldSpec[]=[
+  {key:'sku',label:'SKU / Item ID',required:true,aliases:['item id','item code','product id','product code','sku number','stock keeping unit']},
+  {key:'name',label:'Product name',required:true,aliases:['item','item name','product','product name','description','line item']},
+  {key:'unit_cost',label:'Unit cost',required:true,aliases:['cost','cost per item','cost price','purchase cost','unit cost','buy price']},
+  {key:'price',label:'Selling price',required:true,aliases:['unit price','retail price','sale price','selling price','item price']},
+  {key:'on_hand',label:'Current on-hand units',required:true,aliases:['stock','stock on hand','on hand','quantity on hand','qty on hand','available quantity','inventory quantity','quantity in stock']},
+  {key:'sold_30d',label:'Units sold in the past 30 days',required:true,aliases:['sold','sold last 30 days','30 day sales','qty sold','quantity sold','units sold','sales quantity']},
+  {key:'reorder_point',label:'Reorder point',aliases:['reorder level','minimum stock','min stock','low stock threshold']},
+  {key:'lead_days',label:'Supplier lead time in days',aliases:['lead time','lead time days','supplier lead days']}
+];
 function metrics(product:InventoryItem){
   const velocity=product.sold30/30;
   const cover=velocity>0?product.onHand/velocity:null;
@@ -69,7 +80,7 @@ export function renderInventory(root:HTMLElement,identityScope:string) {
     root.querySelector<HTMLButtonElement>('#inventory-reset')!.addEventListener('click',()=>{items=[...demo];source='Synthetic product catalog';draw();});
     root.querySelector<HTMLInputElement>('#inventory-file')!.addEventListener('change',async e=>{
       const file=(e.target as HTMLInputElement).files?.[0];if(!file)return;
-      try{if(file.size>500000)throw Error('File is larger than 500 KB.');const parsed=parse(await file.text());items=parsed;source=file.name;draw();}
+      try{if(file.size>500000)throw Error('File is larger than 500 KB.');const normalized=await normalizeColumns(await file.text(),inventoryFields,'inventory');const parsed=parse(normalized);items=parsed;source=file.name;draw();}
       catch(err){const status=document.createElement('p');status.className='inventory-error';status.setAttribute('role','alert');status.textContent=err instanceof Error?err.message:'Unable to read inventory CSV.';root.querySelector('.inventory-operations')!.append(status);}
     });
   }
