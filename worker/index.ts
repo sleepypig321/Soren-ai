@@ -10,7 +10,7 @@ type Env = {
   MODEL_API_KEY?: string;
   AI_ENABLED?: string;
   AI_BUDGET_DB?: D1Binding;
-  AI_TEST_LIMIT?: string;
+  AI_PHASE?: string;
 };
 type ChatLine = { role: 'user' | 'assistant'; content: string };
 const SUPABASE_URL = 'https://oclhhrnlltocibkuinie.supabase.co';
@@ -84,19 +84,23 @@ async function chat(request: Request, env: Env): Promise<Response> {
   try {
     if (!(await validateUser(request))) return json({error:'Please sign in again.'},401);
   } catch { return json({error:'Authentication could not be verified. No credits spent.'},503); }
-  const testLimit = Number(env.AI_TEST_LIMIT);
-  if (!Number.isInteger(testLimit) || testLimit < 1 || testLimit > 2) {
-    return json({error:'Live AI test limit is not configured safely. No request sent.'},503);
+  // Development and judging share one atomic D1 ledger. Each call reserves $0.20,
+  // deliberately far above the initial observed ~$0.015 request cost. These are
+  // protective internal reservations, not charges or provider-enforced limits.
+  // Until the owner explicitly switches AI_PHASE to judging, at most 100 calls
+  // may be approved, preserving at least 400 reservations for judges.
+  const phase=env.AI_PHASE??'development';
+  if(phase!=='development'&&phase!=='judging'){
+    return json({error:'AI phase is not configured safely. No request sent.'},503);
   }
+  const maxApproved=phase==='development'?100:500;
   let reservation: D1Row | null;
   try {
-    // Atomic conditional UPDATE: at most 500 reservations against the $100 internal allowance.
-    // Reservation is intentionally NOT refunded on provider failure (fail-safe counting).
-    reservation = await env.AI_BUDGET_DB.prepare(
+    reservation=await env.AI_BUDGET_DB.prepare(
       'UPDATE ai_budget SET remaining_cents = remaining_cents - 20, requests_approved = requests_approved + 1, updated_at = CURRENT_TIMESTAMP WHERE id = 1 AND remaining_cents >= 20 AND requests_approved < ? RETURNING remaining_cents'
-    ).bind(testLimit).first<D1Row>();
+    ).bind(maxApproved).first<D1Row>();
   } catch { return json({error:'AI budget ledger unavailable. No request sent.'},503); }
-  if (!reservation) return json({error:'Soren has reached the shared AI usage allowance. No request sent.'},429);
+  if (!reservation) return json({error:phase==='development'?'Development AI testing cap reached. Judge reserve remains protected.':'Soren has reached the shared judging allowance. No request sent.'},429);
   const messages = [
     {role:'developer',content:SYSTEM},
     {role:'developer',content:'Current business reporting data: '+JSON.stringify(body.facts)+' . If kind is clover, net sales and dates are imported from an owner-authorized report; no transaction counts, COGS, expenses or profit are provided. Never infer them. Otherwise figures are a synthetic or user-provided financial sample. Neither establishes causality.'},
