@@ -447,3 +447,18 @@ img,svg{max-width:100%}
 .clover-chart-dates>span.last-date{left:auto!important;right:8px;transform:none}
 .clover-chart-wrap .clover-daily-chart{border-radius:12px 12px 0 0}
 @media(max-width:650px){.clover-chart-dates>span.detail-date{display:none}.clover-chart-dates{height:35px}.clover-chart-dates>span{font-size:10px}}
+
+/* Shared column-mapping review for unfamiliar CSV exports. */
+.csv-map-backdrop{position:fixed;inset:0;z-index:10000;background:rgba(2,7,25,.84);backdrop-filter:blur(12px);display:grid;place-items:center;padding:16px;overflow-y:auto}
+.csv-map-dialog{width:min(100%,660px);max-height:min(90vh,920px);overflow-y:auto;min-width:0;padding:clamp(19px,3vw,35px);border:1px solid rgba(145,183,255,.55);border-radius:22px;background:radial-gradient(circle at top right,rgba(116,73,216,.24),transparent 52%),linear-gradient(135deg,#14264b,#0b142f);color:#eaf1ff;box-shadow:0 25px 85px #000b}
+.csv-map-dialog h2{margin:0 0 12px;font:600 clamp(22px,3vw,32px)/1.17 Manrope,sans-serif;letter-spacing:-.04em}
+.csv-map-dialog>p{color:#afc0e1;line-height:1.65;font-size:13px;margin:0 0 22px}
+.csv-map-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+.csv-map-form label{display:flex;flex-direction:column;gap:7px;min-width:0;color:#c4d4f6;font-size:12px;font-weight:650}
+.csv-map-form select{min-width:0;width:100%;padding:12px;border:1px solid rgba(143,179,255,.42);border-radius:10px;background:#091832;color:#f3f6ff;font:inherit}
+.csv-map-form select:focus-visible{outline:2px solid #b8d2ff;outline-offset:2px}
+.csv-map-error{grid-column:1/-1;color:#ffd2df;font-size:12px;line-height:1.5;margin:0}
+.csv-map-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:12px;grid-column:1/-1;border-top:1px solid rgba(153,178,229,.22);padding-top:18px}
+.csv-map-actions button{border:1px solid rgba(151,181,240,.48);padding:12px 16px;border-radius:10px;background:rgba(37,57,104,.7);color:#e5f0ff;cursor:pointer;font-size:11px;font-weight:800;letter-spacing:.06em}
+.csv-map-actions button[type=submit]{border:0;background:linear-gradient(110deg,#91d3ff,#c1a7ff);color:#09152e}
+@media(max-width:560px){.csv-map-form{grid-template-columns:minmax(0,1fr)}.csv-map-actions button{flex:1 1 130px}}
