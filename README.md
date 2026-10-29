@@ -81,9 +81,13 @@ npm run dev
 
 The frontend uses TypeScript and Vite, with a Cloudflare Worker chat endpoint and Supabase authentication/private persistence. Never commit API keys. The Meta API key belongs in a Cloudflare secret. Model calls are guarded and can be disabled by deployment configuration.
 
-## Originality and boundaries
+## Independent authorship and AI-assisted development
 
-Soren is an original implementation developed during the October 26–November 4, 2026 hackathon. The submitted code and application are contained in this public repository.
+Soren is an **independent, solo project created and directed by Rachel Croxton** for the October 26–November 4, 2026 hackathon. I identified the retail problems through my own management experience, defined the product vision, selected the features, guided the design and behavior, made the product decisions, and evaluated the results. **There are no additional human teammates or co-founders on this submission.**
+
+**AI-assisted development disclosure:** I used AI coding assistance to help implement, refine, debug, and review the application. This assistance does not represent an additional human teammate. The project concept, requirements, direction, and submission responsibility are mine. AI-generated or AI-assisted code was reviewed and iterated against the intended real-world use cases.
+
+The submitted implementation was developed during the hackathon, and the code and application are contained in this public repository.
 
 Soren is a decision-support product, not an accounting system or a source of independently verified explanations for business results. Its voice is deliberately distinctive, but no static canned dialogue is presented as a live AI answer.
 
