@@ -3,11 +3,13 @@ import { loadCloudImport, currentImportScope } from './import-sync';
 
 type Summary = { revenue:number; profit:number; margin:number; transactions:number; average:number; operating:number; days:number; breakEven:number|null };
 type CloverDay = { date:string; net:number };
+let activeCloverDays:CloverDay[]=[];
 type CloverFacts = {
   kind:'clover';netSales:number;days:number;firstDate:string;lastDate:string;
   recent7:number|null;prior7:number|null;highest:{date:string;net:number};lowest:{date:string;net:number};
 };
 async function cloverFacts():Promise<CloverFacts|null>{
+  activeCloverDays=[];
   const scope=currentImportScope();if(!scope)return null;
   let payload:unknown=null;
   try{payload=await loadCloudImport('clover_daily');}catch{/* Use a valid local copy if the network fails. */}
@@ -16,6 +18,7 @@ async function cloverFacts():Promise<CloverFacts|null>{
   if(!report||!Array.isArray(report.days)||report.days.length<1||report.days.length>366||!Number.isFinite(report.reportedNet))return null;
   if(!report.days.every(d=>typeof d.date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(d.date)&&Number.isFinite(d.net)))return null;
   const days=[...report.days].sort((a,b)=>a.date.localeCompare(b.date));
+  activeCloverDays=days;
   if(Math.abs(days.reduce((n,d)=>n+d.net,0)-report.reportedNet!)>.02)return null;
   const now=new Date();const today=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-');
   const complete=days.at(-1)?.date===today?days.slice(0,-1):days;
@@ -34,7 +37,17 @@ const escape=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 let activePanel:HTMLElement|null=null;
 let teardown:(()=>void)|null=null;
 
-function preview(q:string,f:Summary,clover:CloverFacts|null):string {
+function preview(q:string,f:Summary,clover:CloverFacts|null,previousUserQuestion=''):string {
+  const followupPriority=/which (?:recommendation|one|step)|prioriti[sz]e first|what should i do first|why (?:that|first)/i.test(q);
+  if(followupPriority&&/(sales|revenue|traffic|growth|customer|store)/i.test(previousUserQuestion))return 'Start with the lowest-cost diagnostic: investigate your weakest days for missing stock, hours, and staffing patterns before paying for promotions. Then test one consistent checkout add-on for seven days. Why first? It targets an operational problem you can check immediately, with little or no acquisition spend. Measure daily sales and, when available, transactions; we cannot yet claim which lever will produce the largest lift.';
+  const dateMatch=q.match(/(?:since|from|starting|started|on)\s+(?:managing|working|the store|at the store|on)?\s*(?:on\s+)?(\d{4}-\d{2}-\d{2}|(?:October|Oct)\s+\d{1,2}(?:,?\s+\d{4})?)/i);
+  if(clover&&dateMatch&&/(since|change|compared|before|after|started|managing)/i.test(q)){
+    const rawDate=dateMatch[1];const iso=/^\d{4}-/.test(rawDate)?rawDate:(()=>{const m=rawDate.match(/(?:October|Oct)\s+(\d{1,2})(?:,?\s+(\d{4}))?/i);return m?(m[2]||'2026')+'-10-'+m[1].padStart(2,'0'):''})();
+    const sorted=activeCloverDays.filter(d=>d.date<=clover.lastDate).sort((a,b)=>a.date.localeCompare(b.date));
+    const post=sorted.filter(d=>d.date>=iso),before=sorted.filter(d=>d.date<iso).slice(-post.length);
+    if(post.length&&before.length===post.length){const sum=(ds:CloverDay[])=>ds.reduce((n,d)=>n+d.net,0);const a=sum(before),b=sum(post);return 'From '+iso+' through '+post.at(-1)!.date+', reported net sales total '+money(b)+' across '+post.length+' reporting days. The immediately preceding '+before.length+' reported days total '+money(a)+'. '+(a===0?'The earlier period is zero, so a percentage comparison would mislead.':'That is '+((b/a-1)*100>=0?'+':'')+((b/a-1)*100).toFixed(1)+'% in equal-length reporting windows.')+' This is an association in timing, not proof that the management change caused it; confirm closures and promotions before attributing a cause.';}
+    return 'I can locate '+iso+' in your question, but I cannot construct equal-length before-and-after windows from the available reported dates. I will not compare mismatched periods.';
+  }
   const wantsGrowth=/(increase|boost|improve|grow|raise|drive|more|higher|sell more|upsell|bring in).{0,40}(sales|revenue|traffic|customers|orders|basket|transactions)|(?:sales|revenue|traffic|customers|orders|basket|transactions).{0,40}(increase|boost|improve|grow|higher|more)/i.test(q);
   if(clover&&wantsGrowth){
     const trend=clover.recent7!==null&&clover.prior7!==null&&clover.prior7!==0
@@ -177,6 +190,7 @@ export async function openSorenConversation(facts:Summary,source:string) {
     if(!question||submit.disabled)return;
     submit.disabled=true;input.value='';
     const userLine:Line={role:'user',text:question};
+    const previousUserQuestion=[...lines].reverse().find(line=>line.role==='user')?.text??'';
     const prior=lines.slice(-6).map(line=>({role:line.role==='soren'?'assistant':'user',content:line.text.slice(0,900)}));
     lines.push(userLine);draw();
     try{
@@ -218,7 +232,7 @@ export async function openSorenConversation(facts:Summary,source:string) {
         }
         const res=await fetch('/api/chat',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+session.access_token},body:JSON.stringify({question,facts:clover??facts,history:prior,memories:[...dnaContext,...notes.map(note=>note.note)].slice(0,8)})});
         const response=await res.json() as {answer?:string;error?:string;demo?:boolean};
-        if(res.status===503&&response.demo)reply=preview(question,facts,clover);
+        if(res.status===503&&response.demo)reply=preview(question,facts,clover,previousUserQuestion);
         else if(res.ok&&response.answer)reply=response.answer;
         else reply=response.error||'Soren is temporarily unavailable.';
       }
