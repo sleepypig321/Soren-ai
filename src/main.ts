@@ -15,6 +15,35 @@ let importedScope='';
 let financialRevision=0;
 let financialCloudStatus='LOCAL BROWSER COPY';
 const financialKey=(id:string)=>'soren:financial-daily:v1:'+id;
+type CloverDay = {date:string;net:number};
+type CloverStored = {report:{days:CloverDay[];reportedNet:number;fileName:string}};
+let cloverDays:CloverDay[]=[];
+let cloverSource='';
+let cloverScope='';
+let cloverRevision=0;
+function applyCloverPayload(payload:unknown):boolean {
+  const report=(payload as CloverStored|null)?.report;
+  if(!report||!Array.isArray(report.days)||report.days.length<1||report.days.length>366||
+    !Number.isFinite(report.reportedNet)||!report.days.every(day=>typeof day.date==='string'&&/^\\d{4}-\\d{2}-\\d{2}$/.test(day.date)&&Number.isFinite(day.net)&&day.net>=0)||
+    Math.abs(report.days.reduce((sum,day)=>sum+day.net,0)-report.reportedNet)>.02)return false;
+  cloverDays=[...report.days].sort((a,b)=>a.date.localeCompare(b.date));
+  cloverSource=typeof report.fileName==='string'?report.fileName.slice(0,150):'Saved Clover report';
+  return true;
+}
+function restoreCloverImport(){
+  const user=getActiveUserId(),key=user?user+':'+(getActiveBusinessId()??'personal'):'signed-out';
+  if(cloverScope===key)return;
+  cloverScope=key;cloverRevision++;cloverDays=[];cloverSource='';
+  if(!user)return;
+  try{const raw=localStorage.getItem('soren:clover-daily:v1:'+key);if(raw)applyCloverPayload(JSON.parse(raw));}catch{/* Cloud may still have a copy. */}
+  if(canSyncImports()){
+    const revision=cloverRevision;
+    void loadCloudImport('clover_daily').then(payload=>{
+      if(cloverScope!==key||cloverRevision!==revision)return;
+      if(payload&&applyCloverPayload(payload))render();
+    }).catch(()=>{/* Use the device copy when offline. */});
+  }
+}
 function restoreFinancialImport(){
   const id=getActiveUserId();
   const key=id?id+':'+(getActiveBusinessId()??'personal'):'signed-out';
@@ -104,10 +133,17 @@ let activePage: Page = getPage();
 let selectedInsight = 'revenue';
 function render(){
   restoreFinancialImport();
+  restoreCloverImport();
   const s=summarize(sales);
   const investigations=sales.length?investigateRetail(sales,fixedCosts):[];
   const ordered=[...sales].sort((a,b)=>a.date.localeCompare(b.date));
   const hasFinancial=ordered.length>0;
+  const hasClover=!hasFinancial&&cloverDays.length>0;
+  const hasSales=hasFinancial||hasClover;
+  const salesDays=hasFinancial?ordered.map(day=>({date:day.date,revenue:day.revenue})):cloverDays.map(day=>({date:day.date,revenue:day.net}));
+  const salesTotal=hasFinancial?s.revenue:cloverDays.reduce((n,day)=>n+day.net,0);
+  const salesSource=hasFinancial?source:cloverSource;
+  const salesCount=hasFinancial?s.days:cloverDays.length;
   const high=ordered.length?ordered.reduce((a,b)=>a.revenue>b.revenue?a:b):{date:'',revenue:0};
   const low=ordered.length?ordered.reduce((a,b)=>a.revenue<b.revenue?a:b):{date:'',revenue:0};
   const options:Record<string,{label:string,value:string,context:string,evidence:string,action:string}> = {
@@ -124,18 +160,26 @@ function render(){
       evidence:'Modeled result is '+money(s.operating)+', before other unlisted operating expenses.',
       action:'Validate expense categories and periods before cutting costs or forecasting profitability.'}
   };
-  if(!hasFinancial){for(const option of Object.values(options)){option.value='—';option.context='Import actual financial records to calculate this signal.';option.evidence='No financial data has been provided for this workspace.';option.action='Import a Clover report or a complete financial CSV in Data Sources.';}}
+  if(hasClover){
+    const peak=salesDays.reduce((a,b)=>a.revenue>b.revenue?a:b);
+    const lowDay=salesDays.reduce((a,b)=>a.revenue<b.revenue?a:b);
+    options.revenue={label:'REVENUE SIGNAL',value:money(salesTotal),context:'Actual Clover net sales across '+salesCount+' reported days.',
+      evidence:'Highest reported day: '+money(peak.revenue)+' on '+peak.date+'. Lowest: '+money(lowDay.revenue)+' on '+lowDay.date+'.',
+      action:'Compare hours, promotions and stock availability on those dates; sales alone cannot prove the cause.'};
+    options.margin={label:'MARGIN STRUCTURE',value:'—',context:'Cost of goods was not included in the Clover sales report.',evidence:'Gross margin is unavailable without actual COGS.',action:'Add verified costs for the same reporting period in Data Sources.'};
+    options.transactions={label:'TRANSACTION FLOW',value:'—',context:'Daily transaction counts were not supplied.',evidence:'Net sales are available, but average basket size cannot be calculated.',action:'Import a matching Clover orders report to understand basket size.'};
+    options.costs={label:'COST PRESSURE',value:'—',context:'Operating expenses were not supplied.',evidence:'Sales revenue is not operating profit.',action:'Add actual expense figures for the same period before modeling profit.'};
+  }else if(!hasFinancial){for(const option of Object.values(options)){option.value='—';option.context='Import actual financial records to calculate this signal.';option.evidence='No financial data has been provided for this workspace.';option.action='Import a Clover report or a complete financial CSV in Data Sources.';}}
   if(!options[selectedInsight])selectedInsight='revenue';
   const active=options[selectedInsight];
-  const verdict=!hasFinancial?'I do not have your financial numbers yet. That is a starting point, not a zero-sales result.':s.operating<0?'An operating gap deserves attention.':'The modeled result is positive.';
-  const points=ordered.map((r,i)=>{
-    const x=ordered.length===1?380:16+i*(748/(ordered.length-1));
-    const max=Math.max(1,...ordered.map(d=>d.revenue));
+  const points=salesDays.map((r,i)=>{
+    const x=salesDays.length===1?380:16+i*(748/(salesDays.length-1));
+    const max=Math.max(1,...salesDays.map(d=>d.revenue));
     const y=166-(r.revenue/max)*132;
     return x.toFixed(1)+','+y.toFixed(1);
   }).join(' ');
   const orbitItems=[
-    ['revenue','REVENUE',hasFinancial?money(s.revenue):'—'],
+    ['revenue','REVENUE',hasSales?money(salesTotal):'—'],
     ['margin','GROSS MARGIN',hasFinancial?pct(s.margin):'—'],
     ['transactions','TRANSACTIONS',hasFinancial?String(s.transactions):'—'],
     ['costs','FIXED COSTS',hasFinancial?money(fixedCosts):'—']
@@ -158,21 +202,20 @@ function render(){
           '<div class="crosshair crosshair-one">+</div><div class="crosshair crosshair-two">+</div>'+
           '<div class="orbit-core" id="soren-core" role="button" tabindex="0" aria-label="Talk to Soren"><div class="core-aura"></div><div class="core-disc"><img src="/soren-dna.png" alt="Soren glowing DNA emblem"/></div><span class="core-label">SOREN / CORE</span></div>'+
           orbitItems.map(([id,label,value])=>'<button class="signal signal-'+id+(id===selectedInsight?' selected':'')+'" data-focus="'+id+'" aria-pressed="'+(id===selectedInsight)+'"><span class="signal-point"></span><span class="signal-caption">'+label+'</span><strong>'+value+'</strong></button>').join('')+
-          '<div class="orbit-footer"><span>BUSINESS SYSTEM / '+(hasFinancial?s.days+' DAY WINDOW':'AWAITING FINANCIAL DATA')+'</span><span>04 CONNECTED SIGNALS</span></div>'+
+          '<div class="orbit-footer"><span>BUSINESS SYSTEM / '+(hasSales?salesCount+' DAY WINDOW':'AWAITING FINANCIAL DATA')+'</span><span>04 CONNECTED SIGNALS</span></div>'+
         '</section>'+
         '<section class="intelligence-brief" aria-live="polite">'+
           '<div class="brief-top"><span class="mini-mark">✳</span><span>SOREN / LIVE BRIEFING</span><span class="muted-dot">● LOCAL</span></div>'+
           '<div class="brief-main"><div class="seq">01—04 / CURRENT FOCUS</div><p class="eyebrow">'+active.label+'</p><div class="focus-value">'+active.value+'</div><p class="focus-context">'+active.context+'</p><div class="brief-rule"></div>'+
           '<p class="brief-caption">WHAT THE DATA SAYS</p><p class="brief-body">'+active.evidence+'</p><p class="brief-caption">WHAT I WOULD INVESTIGATE</p><p class="brief-body">'+active.action+'</p></div>'+
-          '<div class="brief-voice"><span class="voice-icon">S</span><p>“'+verdict+' We can investigate it, but we are absolutely not confusing a hypothesis with a fact.”</p></div>'+
           '<button class="strategy-button" id="ask">Develop a strategy <span>↗</span></button><p class="api-state" id="ai-status" role="status">Talk to Soren using your workspace context.</p>'+
         '</section></div>'+
-        '<section class="signal-floor" id="signals"><div class="section-title"><span class="section-index">02 / RETAIL INVESTIGATION DESK</span><h2>Let’s examine the evidence.</h2><p>'+escapeHTML(source)+' · '+s.days+' reporting rows · Calculations run locally · No Meta credits used</p></div>'+
-          (hasFinancial?'<div class="pulse-chart"><svg viewBox="0 0 780 180" role="img" aria-label="Revenue trend across reporting days" preserveAspectRatio="none"><defs><linearGradient id="pulseGrad" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#7aa7ff" stop-opacity=".3"/><stop offset="1" stop-color="#7aa7ff" stop-opacity="0"/></linearGradient></defs><path d="M16 166 H764 M16 122 H764 M16 78 H764 M16 34 H764" fill="none" stroke="#7ca2eb" stroke-opacity=".12"/><polygon points="16,166 '+points+' 764,166" fill="url(#pulseGrad)"/><polyline points="'+points+'" fill="none" stroke="#98beff" stroke-width="3" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/></svg><div class="pulse-axis"><span>'+escapeHTML(ordered[0].date)+'</span><span>'+escapeHTML(ordered[ordered.length-1].date)+'</span></div></div>':'<div class="inventory-boundary"><b>NO FINANCIAL REPORT IMPORTED</b><p>Upload actual Clover or financial data in Data Sources to see sales signals here.</p></div>')+
-          (hasFinancial?'<div class="metric-band"><div><span>GROSS PROFIT</span><strong>'+money(s.profit)+'</strong></div><div><span>AVG. TRANSACTION</span><strong>'+money(s.average)+'</strong></div><div><span>MODELED RESULT</span><strong class="'+(s.operating<0?'loss':'')+'">'+money(s.operating)+'</strong></div><div><span>BREAK-EVEN REVENUE</span><strong>'+(s.breakEven===null?'N/A':money(s.breakEven))+'</strong></div></div>':'')+
+        '<section class="signal-floor" id="signals"><div class="section-title"><span class="section-index">02 / RETAIL INVESTIGATION DESK</span><h2>Let’s examine the evidence.</h2><p>'+escapeHTML(salesSource||source)+' · '+salesCount+' reporting rows · Calculations run locally · No Meta credits used</p></div>'+
+          (hasSales?'<div class="pulse-chart"><svg viewBox="0 0 780 180" role="img" aria-label="Revenue trend across reporting days" preserveAspectRatio="none"><defs><linearGradient id="pulseGrad" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#7aa7ff" stop-opacity=".3"/><stop offset="1" stop-color="#7aa7ff" stop-opacity="0"/></linearGradient></defs><path d="M16 166 H764 M16 122 H764 M16 78 H764 M16 34 H764" fill="none" stroke="#7ca2eb" stroke-opacity=".12"/><polygon points="16,166 '+points+' 764,166" fill="url(#pulseGrad)"/><polyline points="'+points+'" fill="none" stroke="#98beff" stroke-width="3" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/></svg><div class="pulse-axis"><span>'+escapeHTML(salesDays[0].date)+'</span><span>'+escapeHTML(salesDays[salesDays.length-1].date)+'</span></div></div>':'<div class="inventory-boundary"><b>NO FINANCIAL REPORT IMPORTED</b><p>Upload actual Clover or financial data in Data Sources to see sales signals here.</p></div>')+
+          (hasClover?'<div class="metric-band"><div><span>NET SALES</span><strong>'+money(salesTotal)+'</strong></div><div><span>REPORTING DAYS</span><strong>'+salesCount+'</strong></div><div><span>TRANSACTIONS</span><strong>NOT PROVIDED</strong></div><div><span>GROSS MARGIN</span><strong>NOT PROVIDED</strong></div></div>':hasFinancial?'<div class="metric-band"><div><span>GROSS PROFIT</span><strong>'+money(s.profit)+'</strong></div><div><span>AVG. TRANSACTION</span><strong>'+money(s.average)+'</strong></div><div><span>MODELED RESULT</span><strong class="'+(s.operating<0?'loss':'')+'">'+money(s.operating)+'</strong></div><div><span>BREAK-EVEN REVENUE</span><strong>'+(s.breakEven===null?'N/A':money(s.breakEven))+'</strong></div></div>':'')+
           '<div class="investigation-intro"><div><span class="section-index">INVESTIGATION / 01</span><h3>What the numbers can—and cannot—tell us.</h3><p>Every finding shows its calculation, evidence limitations and a practical next step. That distinction matters, darling.</p></div><button id="investigate-chat" type="button">DISCUSS WITH SOREN ↗</button></div>'+
-          '<div class="investigation-list">'+(hasFinancial?investigations.map((item,i)=>'<article class="investigation-card"><div class="investigation-meta"><span>FINDING '+String(i+1).padStart(2,'0')+'</span><span class="investigation-status '+item.status+'">'+(item.status==='watch'?'REVIEW':item.status==='positive'?'OBSERVED':'NEEDS CONTEXT')+'</span></div><div class="investigation-main"><h3>'+escapeHTML(item.label)+'</h3><strong>'+escapeHTML(item.metric)+'</strong></div><p class="investigation-observation">'+escapeHTML(item.observation)+'</p><details><summary>VIEW THE EVIDENCE & NEXT ACTION <span>＋</span></summary><div class="investigation-evidence"><p><b>CALCULATION</b>'+escapeHTML(item.calculation)+'</p><p><b>WHAT WE CANNOT CLAIM</b>'+escapeHTML(item.limitation)+'</p><p><b>NEXT ACTION</b>'+escapeHTML(item.nextStep)+'</p></div></details></article>').join(''):'<p class="inventory-boundary">No financial investigations yet. Import actual data in Data Sources to begin.</p>')+'</div>'+
-          '<div class="investigation-boundary"><span>DATA BOUNDARY / 01</span><p>This financial report does not include product-level inventory, traffic, labor, customer identity or supplier records. Soren will not invent a stockout, employee problem or retention trend without those inputs.</p></div>'+
+          '<div class="investigation-list">'+(hasClover?'<p class="inventory-boundary">Clover sales are loaded. Review the exact daily highs, lows and week-over-week comparison in Data Sources, or discuss them with Soren. Profit and transaction findings await additional reports.</p>':hasFinancial?investigations.map((item,i)=>'<article class="investigation-card"><div class="investigation-meta"><span>FINDING '+String(i+1).padStart(2,'0')+'</span><span class="investigation-status '+item.status+'">'+(item.status==='watch'?'REVIEW':item.status==='positive'?'OBSERVED':'NEEDS CONTEXT')+'</span></div><div class="investigation-main"><h3>'+escapeHTML(item.label)+'</h3><strong>'+escapeHTML(item.metric)+'</strong></div><p class="investigation-observation">'+escapeHTML(item.observation)+'</p><details><summary>VIEW THE EVIDENCE & NEXT ACTION <span>＋</span></summary><div class="investigation-evidence"><p><b>CALCULATION</b>'+escapeHTML(item.calculation)+'</p><p><b>WHAT WE CANNOT CLAIM</b>'+escapeHTML(item.limitation)+'</p><p><b>NEXT ACTION</b>'+escapeHTML(item.nextStep)+'</p></div></details></article>').join(''):'<p class="inventory-boundary">No financial investigations yet. Import actual data in Data Sources to begin.</p>')+'</div>'+
+          '<div class="investigation-boundary"><span>DATA BOUNDARY / 01</span><p>This sales report does not include product-level inventory, traffic, labor, customer identity or supplier records. Soren will not invent a stockout, employee problem or retention trend without those inputs.</p></div>'+
         '</section>'+
         '<section class="inventory-deck" id="inventory" aria-label="Inventory intelligence"></section>'+
         '<section class="data-deck" id="data"><header class="data-heading"><span class="section-index">03 / DATA WORKSPACE</span><h2>Your data. <em>Actual intelligence.</em></h2><p>One report at a time. Start with Clover, see your results, then add more detail when you have it. Imports sync privately to your selected business when online.</p></header>'+
@@ -215,4 +258,5 @@ function render(){
 }
 window.addEventListener('popstate', () => { activePage = getPage(); render(); window.scrollTo(0,0); });
 window.addEventListener('soren:business-changed', () => { render(); });
+window.addEventListener('soren:clover-changed', () => { cloverScope='';render(); });
 initAuth(app, render);
