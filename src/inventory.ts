@@ -23,7 +23,10 @@ function csvRows(text:string){
 function parse(text:string):InventoryItem[]{
   const records=csvRows(text);const headers=(records.shift()??[]).map(v=>v.trim().toLowerCase().replace(/^\uFEFF/,''));
   const required=['sku','name','unit_cost','price','on_hand','sold_30d'];
-  if(required.some(k=>!headers.includes(k)))throw Error('Required columns: '+required.join(', '));
+  if(required.some(k=>!headers.includes(k))){
+    const observed=headers.filter(Boolean).slice(0,12).join(', ');
+    throw Error('This looks like a sales/line-items export, not a complete inventory snapshot. A line-items report cannot tell us current on-hand stock or unit costs. Soren needs both item sales and an inventory export to calculate reorder needs. Detected columns: '+(observed||'none')+'.');
+  }
   if(!records.length||records.length>2000)throw Error('Provide between 1 and 2,000 products.');
   const used=new Set<string>();
   return records.map((r,index)=>{
@@ -62,7 +65,7 @@ export function renderInventory(root:HTMLElement,identityScope:string) {
       '<div class="inventory-investigation"><div class="inventory-callout"><span class="section-index">STOCKOUT & REORDER INVESTIGATION</span><h3>Here’s where I’d look first.</h3><p>'+danger.length+' product(s) are at or below their entered reorder point. Those are review candidates, not automatic orders.</p></div>'+
       '<div class="inventory-priorities">'+(danger.length?danger.slice(0,5).map(i=>{const m=metrics(i);return '<article><div><strong>'+escape(i.name)+'</strong><span>'+escape(i.sku)+'</span></div><p>'+i.onHand+' on hand · '+i.sold30+' sold in 30 days · '+i.leadDays+' lead days</p><p>Illustrative 30-day replenishment target: <b>'+m.suggested+' additional units</b>. Based on constant daily demand and the entered lead time—not a purchase instruction.</p></article>';}).join(''):'<p>Nothing has crossed the supplied reorder points. Let’s not invent an emergency.</p>')+'</div></div>'+
       '<div class="inventory-boundary"><b>WHAT SOREN CANNOT KNOW YET</b><p>Sales from before the 30-day window, returns, purchase orders already in transit, actual supplier reliability, carrying costs, shelf life, seasonal demand and lost sales are not in this dataset. “Slow” means low recorded unit sales, not proven dead stock. Days of cover assumes the last 30 days represent future demand.</p></div>'+
-      '<p class="inventory-schema">CSV columns: <code>sku,name,unit_cost,price,on_hand,sold_30d</code> (optional: <code>reorder_point,lead_days</code>) · Up to 2,000 unique SKUs.</p>';
+      '<p class="inventory-schema">This importer expects an inventory snapshot, not a Clover line-items sales report. For Clover sales-only exports, we need to map the actual headers without inventing stock or costs. Template columns: <code>sku,name,unit_cost,price,on_hand,sold_30d</code> (optional: <code>reorder_point,lead_days</code>).</p>';
     root.querySelector<HTMLButtonElement>('#inventory-reset')!.addEventListener('click',()=>{items=[...demo];source='Synthetic product catalog';draw();});
     root.querySelector<HTMLInputElement>('#inventory-file')!.addEventListener('change',async e=>{
       const file=(e.target as HTMLInputElement).files?.[0];if(!file)return;
