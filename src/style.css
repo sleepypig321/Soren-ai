@@ -605,3 +605,18 @@ img,svg{max-width:100%}
 .prediction-margin{color:#d8bfff}
 @media(max-width:800px){.prediction-controls{grid-template-columns:1fr}.prediction-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:390px){.prediction-grid{grid-template-columns:1fr}}
+
+
+/* A dedicated Decision Lab page: scenario modeling is a first-class workspace. */
+.workspace:not([data-page="decisions"]) .decisions-deck{display:none}
+.workspace[data-page="decisions"] .hero-line,
+.workspace[data-page="decisions"] .stage,
+.workspace[data-page="decisions"] .signal-floor,
+.workspace[data-page="decisions"] .inventory-deck,
+.workspace[data-page="decisions"] .data-deck{display:none}
+.workspace[data-page="decisions"] .decisions-deck{min-height:calc(100vh - 240px);padding-top:clamp(48px,8vh,100px);max-width:100%}
+.decisions-heading{max-width:760px}
+.decisions-heading h2{font:600 clamp(32px,4vw,54px) Manrope,sans-serif;letter-spacing:-.055em;color:#f0f4ff;margin:15px 0 10px}
+.decisions-heading h2 em{font-style:normal;color:#c2a3ff}
+.decisions-heading p{font-size:13px;color:#aabbd8;line-height:1.75;max-width:590px;margin:0 0 26px}
+.decisions-deck .prediction-lab{margin-top:20px}
