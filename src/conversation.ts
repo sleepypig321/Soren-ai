@@ -44,6 +44,7 @@ let activePanel:HTMLElement|null=null;
 let teardown:(()=>void)|null=null;
 
 function preview(q:string,f:Summary,clover:CloverFacts|null,previousUserQuestion=''):string {
+  if(!clover&&f.days===0)return 'I do not have financial figures for this workspace yet. I can still help with retail strategy, staffing and operations. Import actual reports when you want numerical analysis.';
   const followupPriority=/which (?:recommendation|one|step)|prioriti[sz]e first|what should i do first|why (?:that|first)/i.test(q);
   if(followupPriority&&/(sales|revenue|traffic|growth|customer|store)/i.test(previousUserQuestion))return 'Start with the lowest-cost diagnostic: investigate your weakest days for missing stock, hours, and staffing patterns before paying for promotions. Then test one consistent checkout add-on for seven days. Why first? It targets an operational problem you can check immediately, with little or no acquisition spend. Measure daily sales and, when available, transactions; we cannot yet claim which lever will produce the largest lift.';
   const dateMatch=q.match(/(?:since|from|starting|started|on)\s+(?:managing|working|the store|at the store|on)?\s*(?:on\s+)?(\d{4}-\d{2}-\d{2}|(?:October|Oct)\s+\d{1,2}(?:,?\s+\d{4})?)/i);
@@ -240,7 +241,7 @@ export async function openSorenConversation(facts:Summary,source:string) {
             dnaContext=[parts.slice(0,4).join(' | ').slice(0,500),parts.slice(4).join(' | ').slice(0,500)];
           }
         }
-        const res=await fetch('/api/chat',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+session.access_token},body:JSON.stringify({question,facts:clover??facts,history:prior,memories:[...dnaContext,...notes.map(note=>note.note)].slice(0,8)})});
+        const res=await fetch('/api/chat',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+session.access_token},body:JSON.stringify({question,facts:clover??(facts.days>0?facts:null),history:prior,memories:[...dnaContext,...notes.map(note=>note.note)].slice(0,8)})});
         const response=await res.json() as {answer?:string;error?:string;demo?:boolean};
         if(res.status===503&&response.demo)reply=preview(question,facts,clover,previousUserQuestion);
         else if(res.ok&&response.answer)reply=response.answer;
