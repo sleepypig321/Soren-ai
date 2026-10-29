@@ -128,9 +128,9 @@ export async function openSorenConversation(facts:Summary,source:string) {
     <header class="soren-conversation-head"><img src="/soren-dna.png" alt=""/><div><p>SOREN / DIRECT CHANNEL</p><h2 id="soren-conversation-title">Let's talk strategy.</h2></div><button class="soren-conversation-close" aria-label="Close Soren conversation" type="button">×</button></header>
     <div class="soren-conversation-context"><span class="soren-conversation-dot"></span> <span class="conversation-context-business">${escape(businessName)}</span> <span>·</span> ${escape(displaySource)} <span>·</span> ${displayDays} DAYS</div>
     <div class="soren-memory-bar"><span>BUSINESS MEMORY <strong class="soren-memory-count">0</strong></span><button type="button" class="soren-memory-toggle">MANAGE MEMORY ↗</button></div>
-    <section class="soren-memory-list" hidden><p>To save a fact, tell Soren: <strong>Remember: our busiest day is Saturday.</strong></p><div class="soren-memory-items"></div></section>
+    <section class="soren-memory-list" hidden><p>To save a fact, tell Soren naturally: <strong>Remember that our busiest day is Saturday.</strong></p><div class="soren-memory-items"></div></section>
     <div class="soren-conversation-messages" aria-live="polite" aria-label="Soren conversation"></div>
-    <form class="soren-conversation-form"><label for="soren-message">ASK SOREN</label><div class="soren-compose"><textarea id="soren-message" rows="2" maxlength="600" required placeholder="Ask about strategy—or say Remember: ..."></textarea><button type="submit" aria-label="Send message">↗</button></div></form>
+    <form class="soren-conversation-form"><label for="soren-message">ASK SOREN</label><div class="soren-compose"><textarea id="soren-message" rows="2" maxlength="600" required placeholder="Ask about strategy—or tell Soren what to remember"></textarea><button type="submit" aria-label="Send message">↗</button></div></form>
     <p class="soren-conversation-note">Private history saved to your account · Memory belongs to this business · Model usage remains guarded</p>
   </section>`;
   document.body.appendChild(overlay);
@@ -196,7 +196,7 @@ export async function openSorenConversation(facts:Summary,source:string) {
     try{
       await saveLine(userId,businessId,userLine);
       let reply:string;
-      const remembered=/^remember(?:\s+that)?\s*:?\s+(.+)$/i.exec(question);
+      const remembered=/^(?:(?:hey\s+)?soren\s*[,!:]?\s*)?(?:please\s+)?remember(?:\s+that)?\s*:?\s+(.+)$/i.exec(question);
       if(remembered){
         const full=remembered[1].trim();
         const split=full.match(/^(.+?\.)(?:\s+)(.+\?)$/);
