@@ -1,7 +1,10 @@
 -- Soren shared, fail-closed AI spending reservation ledger.
--- Meta promotional credits: $150.00. Reserve $50 outside this app.
--- This $100 reservation ceiling is conservative bookkeeping, NOT a provider-enforced dollar limit.
--- With a $0.20 reservation per approved request, at most 500 requests can be approved.
+-- Meta promotional credits: $150.00; actual remaining balance must be checked with Meta.
+-- This $100 reservation ledger is conservative bookkeeping, NOT a provider-enforced dollar limit.
+-- Development: max 100 approved calls ($20 reserved). Judging: up to 500 calls total,
+-- preserving 400 requests ($80 reserved) until AI_PHASE is explicitly set to judging.
+-- The remaining $50 of credits are outside this ledger as another safety buffer.
+-- Reservation amounts are intentionally higher than the first observed per-call cost.
 -- Do not enable live AI until server validation and Meta account billing safety are confirmed.
 CREATE TABLE IF NOT EXISTS ai_budget (
   id INTEGER PRIMARY KEY CHECK (id = 1),
