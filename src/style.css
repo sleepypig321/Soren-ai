@@ -228,6 +228,15 @@
 .inventory-stats span{color:#a6bae7;font-size:9px;font-weight:800;letter-spacing:.12em}
 .inventory-stats strong{color:#e2e8ff;font-size:clamp(23px,2.5vw,37px);letter-spacing:-.05em}
 .inventory-stats small{color:#7f99c9;font-size:11px}
+.inventory-margin-insight{margin-top:24px;padding:25px;background:linear-gradient(125deg,#182c52,#121735);border:1px solid #947ae76b;min-width:0}
+.inventory-margin-insight h3{font-size:clamp(20px,2.2vw,29px);margin:8px 0 9px;color:#f1edff}
+.inventory-margin-insight>p{font-size:12px;line-height:1.7;color:#afc3e6;max-width:75ch}
+.inventory-margin-ranks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin:19px 0}
+.inventory-margin-ranks>div{min-width:0;padding:17px;background:#0917339c;border:1px solid #8299cd3d}
+.inventory-margin-ranks b{display:block;color:#beaaff;font-size:10px;letter-spacing:.1em;margin-bottom:10px}
+.inventory-margin-ranks p{font-size:12px;line-height:1.55;color:#e5edff;margin:7px 0;overflow-wrap:anywhere}
+.inventory-margin-insight .inventory-margin-disclaimer{font-size:10px;color:#92a9cb}
+@media(max-width:650px){.inventory-margin-insight{padding:17px}.inventory-margin-ranks{grid-template-columns:1fr}}
 .inventory-operations{display:flex;align-items:center;gap:13px;flex-wrap:wrap;border-top:1px solid #8ba2d73b;border-bottom:1px solid #8ba2d73b;padding:23px 0;margin-top:34px}
 .inventory-operations .import-button,.inventory-operations .reset-button{font-size:11px;font-weight:800;letter-spacing:.07em;border:1px solid #8aa6ed92;padding:14px 19px;color:#c9dfff;background:#15254c;cursor:pointer}
 .inventory-operations .import-button{background:linear-gradient(105deg,#8ecfff,#baa7ff);color:#091530;border:0}
