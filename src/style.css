@@ -462,3 +462,50 @@ img,svg{max-width:100%}
 .csv-map-actions button{border:1px solid rgba(151,181,240,.48);padding:12px 16px;border-radius:10px;background:rgba(37,57,104,.7);color:#e5f0ff;cursor:pointer;font-size:11px;font-weight:800;letter-spacing:.06em}
 .csv-map-actions button[type=submit]{border:0;background:linear-gradient(110deg,#91d3ff,#c1a7ff);color:#09152e}
 @media(max-width:560px){.csv-map-form{grid-template-columns:minmax(0,1fr)}.csv-map-actions button{flex:1 1 130px}}
+
+
+/* Public-facing Soren introduction; authentication remains the same secure flow. */
+.auth-landing{display:block;overflow-x:clip;padding:0;min-height:100vh;background:radial-gradient(ellipse 48% 36% at 26% 17%,#2b356b55,transparent 85%),radial-gradient(ellipse 45% 30% at 88% 30%,#34226b5c,transparent 82%),#050a16}
+.auth-landing>.auth-stars{position:absolute;inset:0 0 auto;height:100vh;opacity:.32}
+.landing-header,.landing-layout,.landing-capabilities,.landing-footer{position:relative;z-index:1;width:min(100%,1460px);margin-inline:auto}
+.landing-header{padding:24px clamp(22px,5vw,72px);display:flex;align-items:center;gap:20px;border-bottom:1px solid #748bc239}
+.landing-brand{display:flex;align-items:center;gap:9px;color:#f2f6ff;font:800 20px Manrope,sans-serif;letter-spacing:.29em}
+.landing-brand img{width:62px;height:62px;object-fit:contain;filter:drop-shadow(0 0 18px #679fff8c)}
+.landing-brand small{display:block;font:800 8px 'DM Sans',sans-serif;letter-spacing:.19em;color:#9fb4df;margin-top:5px}
+.landing-header-note{margin-left:auto;font-size:10px;font-weight:800;letter-spacing:.17em;color:#8098c4}
+.landing-header-link,.landing-footer a{font-size:10px;font-weight:900;letter-spacing:.12em;border:1px solid #8b9fd477;padding:12px 17px;color:#cfe0ff;transition:border-color .2s,background .2s}
+.landing-header-link:hover,.landing-footer a:hover{border-color:#b3c4ff;background:#7a91cc22}
+.landing-layout{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(340px,.85fr);gap:clamp(28px,5vw,84px);align-items:center;padding:clamp(40px,5vw,80px) clamp(22px,5vw,72px) clamp(45px,6vw,94px)}
+.landing-story{min-width:0}
+.landing-index{display:flex;align-items:center;gap:12px;color:#a6b8ef;font-size:10px;letter-spacing:.19em;font-weight:800}
+.landing-indicator{width:9px;height:9px;border-radius:50%;background:#8fe2d4;box-shadow:0 0 15px #8fe2d4aa}
+.landing-story h1{font:500 clamp(45px,5.9vw,88px)/1.09 Manrope,sans-serif;letter-spacing:-.073em;color:#f0f5ff;margin:28px 0}
+.landing-story h1 em{font-family:Georgia,serif;font-weight:400;letter-spacing:-.07em;color:#b7a5ff;text-shadow:0 0 65px #8560e993}
+.landing-story h1 span{color:#a8caff}
+.landing-lead{max-width:570px;color:#b0c2e3;font-size:clamp(14px,1.4vw,17px);line-height:1.85}
+.landing-motto{display:flex;gap:14px;align-items:center;margin-top:35px;padding:17px 22px;border-left:2px solid #97b8ff;background:linear-gradient(90deg,#6786d41e,transparent);max-width:520px}
+.landing-motto>span{font-size:23px;color:#9bdbff}
+.landing-motto p{margin:0;color:#bdcbeb;font-size:12px;line-height:1.7}
+.landing-motto strong{color:#f1f4ff}
+.landing-scroll-note{display:flex;gap:20px;margin-top:55px;color:#738dbb;letter-spacing:.16em;font-size:9px;font-weight:800}
+.landing-scroll-note span{color:#a4bcff}
+.auth-landing .auth-card{width:100%;max-width:480px;justify-self:end;box-shadow:0 0 120px #506bd72a,0 30px 80px #010413b9}
+.auth-landing .auth-card h2{font-size:clamp(27px,3vw,36px);line-height:1.24;text-align:center;letter-spacing:-.045em;font-weight:600;margin:19px 0 12px}
+.auth-landing .auth-card h2 em{font-family:Georgia,serif;font-weight:400;color:#b9afff}
+.landing-capabilities{padding:55px clamp(22px,5vw,72px) 78px;border-top:1px solid #6e87ba39}
+.landing-section-intro{display:flex;justify-content:space-between;align-items:end;gap:30px;margin-bottom:34px}
+.landing-section-intro>p{align-self:start;color:#8aace5;font-size:10px;font-weight:800;letter-spacing:.17em}
+.landing-section-intro h2{font:500 clamp(28px,3.4vw,48px)/1.2 Manrope,sans-serif;letter-spacing:-.055em;color:#edf3ff;margin:0}
+.landing-section-intro h2 em{font-family:Georgia,serif;font-weight:400;color:#bdafff}
+.landing-feature-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.landing-feature{position:relative;min-width:0;padding:29px 24px 35px;background:linear-gradient(145deg,#152747bb,#0c1730cc);border:1px solid #7390c24f;box-shadow:inset 0 1px #b4c8ff12}
+.landing-feature::before{content:"";position:absolute;top:0;left:0;width:44%;height:2px;background:linear-gradient(90deg,#82c4ff,#a78cff,transparent)}
+.landing-feature-icon{font-size:30px;color:#a7caff;display:block;margin-bottom:26px;text-shadow:0 0 24px #92aaff9a}
+.landing-feature-number{font-size:9px;letter-spacing:.2em;font-weight:800;color:#91acf1}
+.landing-feature h3{font:700 18px/1.3 Manrope,sans-serif;letter-spacing:-.03em;color:#f0f4ff;margin:14px 0}
+.landing-feature p{font-size:12px;color:#aabedf;line-height:1.8;margin:0}
+.landing-footer{display:flex;justify-content:space-between;align-items:center;gap:22px;padding:25px clamp(22px,5vw,72px) 36px;border-top:1px solid #6e87ba39;color:#829bc8;font-size:9px;letter-spacing:.13em}
+@media(max-width:1050px){.landing-feature-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.landing-layout{gap:28px}.landing-header-note{display:none}}
+@media(max-width:760px){.landing-layout{grid-template-columns:1fr;padding-top:36px}.auth-landing .auth-card{justify-self:center;max-width:540px}.landing-story h1{font-size:clamp(44px,9vw,68px)}.landing-story h1 br:nth-of-type(2){display:none}.landing-scroll-note{margin-top:28px}.landing-section-intro{display:block}.landing-section-intro>p{margin:0 0 20px}.landing-header-link{padding:10px}.landing-footer>span:nth-child(2){display:none}}
+@media(max-width:480px){.landing-brand{font-size:16px}.landing-brand img{width:48px;height:48px}.landing-brand small{font-size:7px;letter-spacing:.1em}.landing-header{padding-top:15px;padding-bottom:15px}.landing-header-link{font-size:9px;padding:10px 9px}.landing-feature-grid{grid-template-columns:1fr}.landing-story h1{font-size:clamp(42px,11vw,56px)}.landing-feature{padding:24px}.landing-capabilities{padding-top:38px;padding-bottom:48px}.landing-motto{padding:15px}.auth-landing .auth-card{padding:28px 22px}}
+@media(prefers-reduced-motion:reduce){.landing-header-link,.landing-footer a{transition:none}}
