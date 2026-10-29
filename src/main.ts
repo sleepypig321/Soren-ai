@@ -8,18 +8,9 @@ import { renderInventory } from './inventory';
 import { renderCloverImport } from './clover-import';
 
 type Sale = { date: string; revenue: number; transactions: number; cogs: number };
-const demo: Sale[] = [
-  {date:'2026-10-01',revenue:124,transactions:7,cogs:73},{date:'2026-10-02',revenue:89,transactions:5,cogs:54},
-  {date:'2026-10-03',revenue:151,transactions:9,cogs:89},{date:'2026-10-04',revenue:61,transactions:4,cogs:38},
-  {date:'2026-10-05',revenue:137,transactions:8,cogs:81},{date:'2026-10-06',revenue:96,transactions:6,cogs:58},
-  {date:'2026-10-07',revenue:174,transactions:10,cogs:101},{date:'2026-10-08',revenue:82,transactions:5,cogs:51},
-  {date:'2026-10-09',revenue:112,transactions:7,cogs:68},{date:'2026-10-10',revenue:205,transactions:12,cogs:126},
-  {date:'2026-10-11',revenue:56,transactions:3,cogs:36},{date:'2026-10-12',revenue:93,transactions:5,cogs:55},
-  {date:'2026-10-13',revenue:160,transactions:9,cogs:94},{date:'2026-10-14',revenue:116,transactions:7,cogs:69}
-];
-let sales = [...demo];
-let source = 'Synthetic sample';
-let fixedCosts = 1250;
+let sales:Sale[] = [];
+let source = 'No financial data imported';
+let fixedCosts = 0;
 let importedScope='';
 let financialRevision=0;
 let financialCloudStatus='LOCAL BROWSER COPY';
@@ -28,25 +19,25 @@ function restoreFinancialImport(){
   const id=getActiveUserId();
   const key=id?id+':'+(getActiveBusinessId()??'personal'):'signed-out';
   if(importedScope===key)return;
-  importedScope=key;financialRevision++;financialCloudStatus='LOCAL BROWSER COPY';sales=[...demo];source='Synthetic sample';fixedCosts=1250;
+  importedScope=key;financialRevision++;financialCloudStatus='LOCAL BROWSER COPY';sales=[];source='No financial data imported';fixedCosts=0;
   if(!id)return;
   try{
     const raw=localStorage.getItem(financialKey(key));if(raw){
     const stored=JSON.parse(raw) as {sales:Sale[];source:string;fixedCosts:number};
     if(Array.isArray(stored.sales)&&stored.sales.length>=1&&stored.sales.length<=366&&stored.sales.every(row=>/^\d{4}-\d{2}-\d{2}$/.test(row.date)&&Number.isFinite(row.revenue)&&row.revenue>=0&&Number.isInteger(row.transactions)&&row.transactions>=0&&Number.isFinite(row.cogs)&&row.cogs>=0&&row.cogs<=row.revenue)){
     sales=stored.sales;source=typeof stored.source==='string'?stored.source.slice(0,150):'Saved financial CSV';
-    fixedCosts=Number.isFinite(stored.fixedCosts)&&stored.fixedCosts>=0&&stored.fixedCosts<=1e9?stored.fixedCosts:1250;
+    fixedCosts=Number.isFinite(stored.fixedCosts)&&stored.fixedCosts>=0&&stored.fixedCosts<=1e9?stored.fixedCosts:0;
     }}
-  }catch{/* Continue with the synthetic sample when browser storage is unavailable. */}
+  }catch{/* Keep the financial workspace empty when browser storage is unavailable. */}
   if(canSyncImports()){
     const revision=financialRevision;
     void loadCloudImport('financial_daily').then(async payload=>{
       if(importedScope!==key||financialRevision!==revision)return;
       const cloud=payload as {sales?:Sale[];source?:string;fixedCosts?:number}|null;
       if(cloud?.sales&&Array.isArray(cloud.sales)&&cloud.sales.length>=1&&cloud.sales.length<=366&&cloud.sales.every(row=>/^\d{4}-\d{2}-\d{2}$/.test(row.date)&&Number.isFinite(row.revenue)&&row.revenue>=0&&Number.isInteger(row.transactions)&&row.transactions>=0&&Number.isFinite(row.cogs)&&row.cogs>=0&&row.cogs<=row.revenue)){
-        sales=cloud.sales;source=typeof cloud.source==='string'?cloud.source.slice(0,150):'Saved financial data';fixedCosts=Number.isFinite(cloud.fixedCosts)&&cloud.fixedCosts!>=0&&cloud.fixedCosts!<=1e9?cloud.fixedCosts!:1250;
+        sales=cloud.sales;source=typeof cloud.source==='string'?cloud.source.slice(0,150):'Saved financial data';fixedCosts=Number.isFinite(cloud.fixedCosts)&&cloud.fixedCosts!>=0&&cloud.fixedCosts!<=1e9?cloud.fixedCosts!:0;
         saveFinancialImport();financialCloudStatus='RESTORED FROM PRIVATE CLOUD';render();
-      }else if(!payload&&source!=='Synthetic sample'){
+      }else if(!payload&&sales.length>0){
         await saveCloudImport('financial_daily',{sales,source,fixedCosts});
         if(importedScope===key)financialCloudStatus='SYNCED TO PRIVATE CLOUD';
       }
@@ -56,7 +47,7 @@ function restoreFinancialImport(){
 function saveFinancialImport():boolean{
   if(importedScope==='signed-out')return false;
   try{
-    if(source==='Synthetic sample')localStorage.removeItem(financialKey(importedScope));
+    if(sales.length===0)localStorage.removeItem(financialKey(importedScope));
     else localStorage.setItem(financialKey(importedScope),JSON.stringify({sales,source,fixedCosts}));
     return true;
   }catch{return false;}
@@ -114,10 +105,11 @@ let selectedInsight = 'revenue';
 function render(){
   restoreFinancialImport();
   const s=summarize(sales);
-  const investigations=investigateRetail(sales,fixedCosts);
+  const investigations=sales.length?investigateRetail(sales,fixedCosts):[];
   const ordered=[...sales].sort((a,b)=>a.date.localeCompare(b.date));
-  const high=ordered.reduce((a,b)=>a.revenue>b.revenue?a:b);
-  const low=ordered.reduce((a,b)=>a.revenue<b.revenue?a:b);
+  const hasFinancial=ordered.length>0;
+  const high=ordered.length?ordered.reduce((a,b)=>a.revenue>b.revenue?a:b):{date:'',revenue:0};
+  const low=ordered.length?ordered.reduce((a,b)=>a.revenue<b.revenue?a:b):{date:'',revenue:0};
   const options:Record<string,{label:string,value:string,context:string,evidence:string,action:string}> = {
     revenue:{label:'REVENUE SIGNAL',value:money(s.revenue),context:'Recorded sales across '+s.days+' reporting days.',
       evidence:'Daily peak: '+money(high.revenue)+' on '+high.date+'. Daily low: '+money(low.revenue)+' on '+low.date+'.',
@@ -132,9 +124,10 @@ function render(){
       evidence:'Modeled result is '+money(s.operating)+', before other unlisted operating expenses.',
       action:'Validate expense categories and periods before cutting costs or forecasting profitability.'}
   };
+  if(!hasFinancial){for(const option of Object.values(options)){option.value='—';option.context='Import actual financial records to calculate this signal.';option.evidence='No financial data has been provided for this workspace.';option.action='Import a Clover report or a complete financial CSV in Data Sources.';}}
   if(!options[selectedInsight])selectedInsight='revenue';
   const active=options[selectedInsight];
-  const verdict=s.operating<0?'An operating gap deserves attention.':'The modeled result is positive.';
+  const verdict=!hasFinancial?'I do not have your financial numbers yet. That is a starting point, not a zero-sales result.':s.operating<0?'An operating gap deserves attention.':'The modeled result is positive.';
   const points=ordered.map((r,i)=>{
     const x=ordered.length===1?380:16+i*(748/(ordered.length-1));
     const max=Math.max(1,...ordered.map(d=>d.revenue));
@@ -142,10 +135,10 @@ function render(){
     return x.toFixed(1)+','+y.toFixed(1);
   }).join(' ');
   const orbitItems=[
-    ['revenue','REVENUE',money(s.revenue)],
-    ['margin','GROSS MARGIN',pct(s.margin)],
-    ['transactions','TRANSACTIONS',String(s.transactions)],
-    ['costs','FIXED COSTS',money(fixedCosts)]
+    ['revenue','REVENUE',hasFinancial?money(s.revenue):'—'],
+    ['margin','GROSS MARGIN',hasFinancial?pct(s.margin):'—'],
+    ['transactions','TRANSACTIONS',hasFinancial?String(s.transactions):'—'],
+    ['costs','FIXED COSTS',hasFinancial?money(fixedCosts):'—']
   ];
   app.innerHTML=
     '<div class="observatory">'+
@@ -158,35 +151,35 @@ function render(){
           '</nav>'+
         '<div class="rail-bottom"><span class="rail-pulse"></span><span>01</span></div></aside>'+
       '<div class="workspace" data-page="'+activePage+'">'+
-        '<div class="topline"><div class="wordmark">SOREN <span> / INTELLIGENCE WITH INTENTION</span></div><div class="top-meta"><span>WORKSPACE 001</span><span class="sep"></span><span class="demo-led">● SYNTHETIC DEMO · AI DISABLED</span></div></div>'+
+        '<div class="topline"><div class="wordmark">SOREN <span> / INTELLIGENCE WITH INTENTION</span></div><div class="top-meta"><span>BUSINESS WORKSPACE</span><span class="sep"></span><span class="demo-led">● PRIVATE BUSINESS WORKSPACE</span></div></div>'+
         '<div class="hero-line"><div><p class="eyebrow">GOOD TO SEE YOU, PARTNER.</p><h1>Let’s find the <em>signal</em><br/>inside the noise.</h1></div><p class="hero-copy">Your business is a living system. Every figure is connected. Select a signal and follow the evidence.</p></div>'+
         '<div class="stage" id="intelligence"><section class="orbit-scene" aria-label="Interactive business intelligence map">'+
           '<div class="orbit-grid"></div><div class="orbital orbital-a"></div><div class="orbital orbital-b"></div><div class="orbital orbital-c"></div>'+
           '<div class="crosshair crosshair-one">+</div><div class="crosshair crosshair-two">+</div>'+
           '<div class="orbit-core" id="soren-core" role="button" tabindex="0" aria-label="Talk to Soren"><div class="core-aura"></div><div class="core-disc"><img src="/soren-dna.png" alt="Soren glowing DNA emblem"/></div><span class="core-label">SOREN / CORE</span></div>'+
           orbitItems.map(([id,label,value])=>'<button class="signal signal-'+id+(id===selectedInsight?' selected':'')+'" data-focus="'+id+'" aria-pressed="'+(id===selectedInsight)+'"><span class="signal-point"></span><span class="signal-caption">'+label+'</span><strong>'+value+'</strong></button>').join('')+
-          '<div class="orbit-footer"><span>BUSINESS SYSTEM / '+s.days+' DAY WINDOW</span><span>04 CONNECTED SIGNALS</span></div>'+
+          '<div class="orbit-footer"><span>BUSINESS SYSTEM / '+(hasFinancial?s.days+' DAY WINDOW':'AWAITING FINANCIAL DATA')</span><span>04 CONNECTED SIGNALS</span></div>'+
         '</section>'+
         '<section class="intelligence-brief" aria-live="polite">'+
           '<div class="brief-top"><span class="mini-mark">✳</span><span>SOREN / LIVE BRIEFING</span><span class="muted-dot">● LOCAL</span></div>'+
           '<div class="brief-main"><div class="seq">01—04 / CURRENT FOCUS</div><p class="eyebrow">'+active.label+'</p><div class="focus-value">'+active.value+'</div><p class="focus-context">'+active.context+'</p><div class="brief-rule"></div>'+
           '<p class="brief-caption">WHAT THE DATA SAYS</p><p class="brief-body">'+active.evidence+'</p><p class="brief-caption">WHAT I WOULD INVESTIGATE</p><p class="brief-body">'+active.action+'</p></div>'+
           '<div class="brief-voice"><span class="voice-icon">S</span><p>“'+verdict+' We can investigate it, but we are absolutely not confusing a hypothesis with a fact.”</p></div>'+
-          '<button class="strategy-button" id="ask">Develop a strategy <span>↗</span></button><p class="api-state" id="ai-status" role="status">Talk to Soren in local preview mode. Live Meta calls remain locked for credit safety.</p>'+
+          '<button class="strategy-button" id="ask">Develop a strategy <span>↗</span></button><p class="api-state" id="ai-status" role="status">Talk to Soren using your workspace context.</p>'+
         '</section></div>'+
         '<section class="signal-floor" id="signals"><div class="section-title"><span class="section-index">02 / RETAIL INVESTIGATION DESK</span><h2>Let’s examine the evidence.</h2><p>'+escapeHTML(source)+' · '+s.days+' reporting rows · Calculations run locally · No Meta credits used</p></div>'+
-          '<div class="pulse-chart"><svg viewBox="0 0 780 180" role="img" aria-label="Revenue trend across reporting days" preserveAspectRatio="none"><defs><linearGradient id="pulseGrad" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#7aa7ff" stop-opacity=".3"/><stop offset="1" stop-color="#7aa7ff" stop-opacity="0"/></linearGradient></defs><path d="M16 166 H764 M16 122 H764 M16 78 H764 M16 34 H764" fill="none" stroke="#7ca2eb" stroke-opacity=".12"/><polygon points="16,166 '+points+' 764,166" fill="url(#pulseGrad)"/><polyline points="'+points+'" fill="none" stroke="#98beff" stroke-width="3" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/></svg><div class="pulse-axis"><span>'+escapeHTML(ordered[0].date)+'</span><span>'+escapeHTML(ordered[ordered.length-1].date)+'</span></div></div>'+
-          '<div class="metric-band"><div><span>GROSS PROFIT</span><strong>'+money(s.profit)+'</strong></div><div><span>AVG. TRANSACTION</span><strong>'+money(s.average)+'</strong></div><div><span>MODELED RESULT</span><strong class="'+(s.operating<0?'loss':'')+'">'+money(s.operating)+'</strong></div><div><span>BREAK-EVEN REVENUE</span><strong>'+(s.breakEven===null?'N/A':money(s.breakEven))+'</strong></div></div>'+
+          (hasFinancial?'<div class="pulse-chart"><svg viewBox="0 0 780 180" role="img" aria-label="Revenue trend across reporting days" preserveAspectRatio="none"><defs><linearGradient id="pulseGrad" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#7aa7ff" stop-opacity=".3"/><stop offset="1" stop-color="#7aa7ff" stop-opacity="0"/></linearGradient></defs><path d="M16 166 H764 M16 122 H764 M16 78 H764 M16 34 H764" fill="none" stroke="#7ca2eb" stroke-opacity=".12"/><polygon points="16,166 '+points+' 764,166" fill="url(#pulseGrad)"/><polyline points="'+points+'" fill="none" stroke="#98beff" stroke-width="3" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"/></svg><div class="pulse-axis"><span>'+escapeHTML(ordered[0].date)+'</span><span>'+escapeHTML(ordered[ordered.length-1].date)+'</span></div></div>':'<div class="inventory-boundary"><b>NO FINANCIAL REPORT IMPORTED</b><p>Upload actual Clover or financial data in Data Sources to see sales signals here.</p></div>')+
+          (hasFinancial?'<div class="metric-band"><div><span>GROSS PROFIT</span><strong>'+money(s.profit)+'</strong></div><div><span>AVG. TRANSACTION</span><strong>'+money(s.average)+'</strong></div><div><span>MODELED RESULT</span><strong class="'+(s.operating<0?'loss':'')+'">'+money(s.operating)+'</strong></div><div><span>BREAK-EVEN REVENUE</span><strong>'+(s.breakEven===null?'N/A':money(s.breakEven))+'</strong></div></div>':'')+
           '<div class="investigation-intro"><div><span class="section-index">INVESTIGATION / 01</span><h3>What the numbers can—and cannot—tell us.</h3><p>Every finding shows its calculation, evidence limitations and a practical next step. That distinction matters, darling.</p></div><button id="investigate-chat" type="button">DISCUSS WITH SOREN ↗</button></div>'+
-          '<div class="investigation-list">'+investigations.map((item,i)=>'<article class="investigation-card"><div class="investigation-meta"><span>FINDING '+String(i+1).padStart(2,'0')+'</span><span class="investigation-status '+item.status+'">'+(item.status==='watch'?'REVIEW':item.status==='positive'?'OBSERVED':'NEEDS CONTEXT')+'</span></div><div class="investigation-main"><h3>'+escapeHTML(item.label)+'</h3><strong>'+escapeHTML(item.metric)+'</strong></div><p class="investigation-observation">'+escapeHTML(item.observation)+'</p><details><summary>VIEW THE EVIDENCE & NEXT ACTION <span>＋</span></summary><div class="investigation-evidence"><p><b>CALCULATION</b>'+escapeHTML(item.calculation)+'</p><p><b>WHAT WE CANNOT CLAIM</b>'+escapeHTML(item.limitation)+'</p><p><b>NEXT ACTION</b>'+escapeHTML(item.nextStep)+'</p></div></details></article>').join('')+'</div>'+
-          '<div class="investigation-boundary"><span>DATA BOUNDARY / 01</span><p>No product-level inventory, traffic, labor, customer identity or supplier records were provided. Soren will not invent a stockout, employee problem or retention trend without those inputs.</p></div>'+
+          '<div class="investigation-list">'+(hasFinancial?investigations.map((item,i)=>'<article class="investigation-card"><div class="investigation-meta"><span>FINDING '+String(i+1).padStart(2,'0')+'</span><span class="investigation-status '+item.status+'">'+(item.status==='watch'?'REVIEW':item.status==='positive'?'OBSERVED':'NEEDS CONTEXT')+'</span></div><div class="investigation-main"><h3>'+escapeHTML(item.label)+'</h3><strong>'+escapeHTML(item.metric)+'</strong></div><p class="investigation-observation">'+escapeHTML(item.observation)+'</p><details><summary>VIEW THE EVIDENCE & NEXT ACTION <span>＋</span></summary><div class="investigation-evidence"><p><b>CALCULATION</b>'+escapeHTML(item.calculation)+'</p><p><b>WHAT WE CANNOT CLAIM</b>'+escapeHTML(item.limitation)+'</p><p><b>NEXT ACTION</b>'+escapeHTML(item.nextStep)+'</p></div></details></article>').join('')+'</div>'+
+          '<div class="investigation-boundary"><span>DATA BOUNDARY / 01</span><p>This financial report does not include product-level inventory, traffic, labor, customer identity or supplier records. Soren will not invent a stockout, employee problem or retention trend without those inputs.</p></div>'+
         '</section>'+
         '<section class="inventory-deck" id="inventory" aria-label="Inventory intelligence"></section>'+
         '<section class="data-deck" id="data"><header class="data-heading"><span class="section-index">03 / DATA WORKSPACE</span><h2>Your data. <em>Actual intelligence.</em></h2><p>One report at a time. Start with Clover, see your results, then add more detail when you have it. Imports sync privately to your selected business when online.</p></header>'+
         '<div class="data-journey"><div><span>01</span><strong>IMPORT</strong><small>Choose a sales report</small></div><div><span>02</span><strong>REVIEW</strong><small>Verify the figures</small></div><div><span>03</span><strong>INVESTIGATE</strong><small>Follow the evidence</small></div></div>'+
         '<section class="clover-import" aria-label="Clover daily import"></section>'+
-        '<details class="financial-advanced"><summary><span>ALTERNATIVE FORMAT</span><strong>Using a custom financial CSV?</strong><small>Advanced import, expense input, and synthetic sample controls</small></summary><div class="financial-advanced-content"><p>For manually prepared daily reports with the required columns. This is separate from the Clover importer above.</p><div class="data-controls"><div><label for="fixed">FIXED EXPENSES / SAME PERIOD ($)</label><input id="fixed" type="number" min="0" step="1" value="'+fixedCosts+'"/><small>COGS is already accounted for. Other expenses may still be missing.</small></div><label class="import-button">IMPORT FINANCIAL CSV ↑<input id="file" type="file" accept=".csv,text/csv" hidden/></label><button id="reset" class="reset-button">RESET SAMPLE ↺</button></div><p class="schema">CSV FORMAT: <code>date,revenue,transactions,cogs</code> · '+(source==='Synthetic sample'?'SYNTHETIC SAMPLE ACTIVE':'SAVED: '+escapeHTML(source))+' · '+escapeHTML(financialCloudStatus)+'</p></div></details></section>'+
-        '<footer>© SOREN / PROTOTYPE 0.2 <span>INTELLIGENCE WITH INTENTION · META AI CURRENTLY DISABLED</span></footer>'+
+        '<details class="financial-advanced"><summary><span>ALTERNATIVE FORMAT</span><strong>Using a custom financial CSV?</strong><small>Advanced import and expense input</small></summary><div class="financial-advanced-content"><p>For manually prepared daily reports with the required columns. This is separate from the Clover importer above.</p><div class="data-controls"><div><label for="fixed">FIXED EXPENSES / SAME PERIOD ($)</label><input id="fixed" type="number" min="0" step="1" value="'+(hasFinancial?fixedCosts:'')+'" placeholder="Optional after import"/><small>COGS is already accounted for. Other expenses may still be missing.</small></div><label class="import-button">IMPORT FINANCIAL CSV ↑<input id="file" type="file" accept=".csv,text/csv" hidden/></label><button id="reset" class="reset-button">CLEAR FINANCIAL DATA ↺</button></div><p class="schema">CSV FORMAT: <code>date,revenue,transactions,cogs</code> · '+(sales.length===0?'NO FINANCIAL REPORT IMPORTED':'SAVED: '+escapeHTML(source))+' · '+escapeHTML(financialCloudStatus)+'</p></div></details></section>'+
+        '<footer>© SOREN / PROTOTYPE 0.2 <span>INTELLIGENCE WITH INTENTION · BUSINESS INTELLIGENCE</span></footer>'+
       '</div></div>';
   document.querySelectorAll<HTMLButtonElement>('[data-page-link]').forEach(button => button.addEventListener('click', () => {
     const page = button.dataset.pageLink as Page;
@@ -201,9 +194,9 @@ function render(){
   }));
   document.querySelector<HTMLInputElement>('#fixed')!.addEventListener('change',e=>{
     const n=Number((e.target as HTMLInputElement).value);
-    if(Number.isFinite(n)&&n>=0&&n<=1e9){financialRevision++;fixedCosts=n;saveFinancialImport();if(source!=='Synthetic sample'&&canSyncImports())void saveCloudImport('financial_daily',{sales,source,fixedCosts}).catch(()=>{});render();}
+    if(Number.isFinite(n)&&n>=0&&n<=1e9){financialRevision++;fixedCosts=n;saveFinancialImport();if(sales.length>0&&canSyncImports())void saveCloudImport('financial_daily',{sales,source,fixedCosts}).catch(()=>{});render();}
   });
-  document.querySelector('#reset')!.addEventListener('click',()=>{financialRevision++;sales=[...demo];source='Synthetic sample';fixedCosts=1250;selectedInsight='revenue';saveFinancialImport();if(canSyncImports())void removeCloudImport('financial_daily').catch(()=>{});render();});
+  document.querySelector('#reset')!.addEventListener('click',()=>{financialRevision++;sales=[];source='No financial data imported';fixedCosts=0;selectedInsight='revenue';saveFinancialImport();if(canSyncImports())void removeCloudImport('financial_daily').catch(()=>{});render();});
   document.querySelector<HTMLInputElement>('#file')!.addEventListener('change',async e=>{
     const file=(e.target as HTMLInputElement).files?.[0];if(!file)return;
     try{if(file.size>200000)throw Error('File exceeds 200 KB.');financialRevision++;sales=parseCSV(await normalizeColumns(await file.text(),financialFields,'daily financial report'));source=file.name;selectedInsight='revenue';const saved=saveFinancialImport();if(canSyncImports()){const targetScope=importedScope;void saveCloudImport('financial_daily',{sales,source,fixedCosts}).then(()=>{if(importedScope===targetScope){financialCloudStatus='SYNCED TO PRIVATE CLOUD';render();}}).catch(()=>{if(importedScope===targetScope){financialCloudStatus='OFFLINE / LOCAL COPY AVAILABLE';render();}});}render();if(!saved)alert('File imported for this session, but this browser could not store it for future visits.');}
