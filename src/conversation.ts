@@ -34,6 +34,10 @@ type Line = { role:'user'|'soren'; text:string };
 type Memory = { id:string; note:string };
 const money=(n:number)=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(n);
 const escape=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
+// Render a tiny, safe subset of chat Markdown after HTML-escaping all user/model text.
+const formatChatText=(s:string)=>escape(s)
+  .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+  .replace(/(^|\n)[ \t]*[\*-][ \t]+/g,'$1• ');
 let activePanel:HTMLElement|null=null;
 let teardown:(()=>void)|null=null;
 
@@ -160,7 +164,7 @@ export async function openSorenConversation(facts:Summary,source:string) {
   window.addEventListener('soren:auth-changed',onAuthChanged);
   function draw() {
     const visible:Line[]=[{role:'soren',text:"Good to see you, partner. What's on your mind?"},...lines];
-    messages.innerHTML=visible.map(line=>'<article class="soren-line '+line.role+'"><span>'+(line.role==='soren'?'SOREN':'YOU')+'</span><p>'+escape(line.text)+'</p></article>').join('');
+    messages.innerHTML=visible.map(line=>'<article class="soren-line '+line.role+'"><span>'+(line.role==='soren'?'SOREN':'YOU')+'</span><p>'+formatChatText(line.text)+'</p></article>').join('');
     messages.scrollTop=messages.scrollHeight;
   }
   function drawMemories() {
