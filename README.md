@@ -1,23 +1,49 @@
-# SOREN — Intelligence With Intention
+Soren is a new, independent AI business intelligence partner developed during the October 26–November 4, 2026 hackathon by **Fern Croxton, a working retail store manager**. It was born from firsthand operational problems—not a hypothetical startup exercise. After managing stores, rebuilding underperforming sales floors, handling merchandising and staffing problems, changing operating hours, upselling customers, and trying to make sense of incomplete point-of-sale reports, I kept encountering the same gap: a store can have plenty of numbers and still lack a clear understanding of what to do next.
 
-**Meta Global AI Developer Hackathon 2026 · AI business intelligence partner for independent retailers**
+A manager knows the context behind a sales spike, a slow day, an out-of-stock shelf, or an employee who never offers an add-on. A POS report knows the transactions it recorded. **Neither has the whole picture by itself.** Soren is designed to connect those two sources: the reported data and the human operational knowledge behind it.
 
-Soren is a new, independent project built during the October 26–November 4, 2026 hackathon. It combines a private, multi-business workspace, retained sales-report history, deterministic retail analysis, dated operational memory, and a candid conversational AI persona. The goal is to help a manager connect what happened on the floor with what the numbers actually show—without confusing a plausible explanation with proof.
+Soren combines a private, evolving business workspace, retained reporting history, deterministic retail analysis, dated management notes, and a distinctly candid AI conversational partner. His value is not merely telling a manager what revenue was. It is helping them investigate **why the business might be changing, what the evidence can actually support, and what action is worth taking next**—without fabricating causes or pretending missing data exists.
 
 **Live app:** https://soren-ai.fern-croxton.workers.dev
 
-## What works
+## The real retail problem
+
+Independent retailers often lack a dedicated analyst, purchasing team, or business intelligence department. The manager is the person greeting customers, training staff, merchandising, tracking stockouts, making sales, changing displays, and then trying to interpret a spreadsheet after closing.
+
+These are pain points I have personally dealt with:
+
+- **Revenue is not the whole story.** A stronger sales day doesn't necessarily mean higher profit, better conversion, or healthier inventory. If cost, traffic, and transaction data are absent, the right answer is to identify that gap.
+- **Frontline decisions are lost.** Managers remember when they reorganized shelves, changed hours, launched promotions, or started upselling. A static sales export does not record those decisions. Soren can retain dated management context alongside reported sales to investigate changes over time.
+- **Reports are fragmented and short-lived.** Businesses accumulate separate exports instead of an evolving operational record. Soren stores multiple reports within a selected workspace, reconciles their dates, and builds a longer sales timeline.
+- **Low-margin products and stockouts complicate decisions.** Something can drive traffic without delivering meaningful contribution. Soren uses actual supplied costs and inventory records where available, and flags what cannot be concluded without them.
+- **Owners and managers need a thinking partner, not another dashboard full of unexplained graphs.** Soren turns observed patterns into a conversation about tradeoffs, next steps, and measurable questions. He can be blunt and funny without inventing evidence.
+
+The longer-term vision is a business intelligence partner that **evolves as the owner and business evolve**: each import extends the record, each saved operational decision adds context, and future questions can be grounded in more of the business's actual history. Soren currently supports that foundation through retained sales reports and business notes; it is not an automatic integration with every POS or inventory platform.
+
+## What Soren can do today
+
+### Build an evolving, private business history
 
 - Google and email authentication; separate private business workspaces.
 - Clover Daily Sales Report CSV import, with date and reported-total validation.
 - Multiple saved Clover reports, merged into a chronological history; later imports supersede overlapping daily dates instead of double-counting them.
 - Custom daily financial CSV import (date, revenue, transactions, COGS), with separately retained report history and period-appropriate optional fixed costs.
-- Business overview and evidence-based investigation panels using imported figures, including recent-versus-prior seven-day net sales where a complete comparison is available.
-- Inventory CSV analysis for actual supplied product, cost, stock, and sales-velocity fields; no fictional catalog. Inventory is browser-local, not synced to the cloud.
-- Soren chat powered by Meta Muse Spark when enabled and authenticated. The AI is instructed to distinguish observed figures, owner-provided observations, hypotheses, and missing information, while speaking with a frank, playful, action-first personality.
-- Business notes and relevant dated milestones used as context for sales comparisons. Timing can suggest hypotheses, **not prove causality**.
 - Private account-scoped data import synchronization when online, with a browser-local copy as fallback. Avoid using shared devices for sensitive business reports.
-- A server-side D1 request reservation guard that separates development and judging phases. Reservations are protective accounting, not actual provider billing figures.
+
+### Investigate retail performance without fake certainty
+
+- Business overview and evidence-based investigation panels using imported figures, including recent-versus-prior seven-day net sales where a complete comparison is available.
+- Dated management notes that provide context for before-and-after sales comparisons. A timing relationship is meaningful to investigate but does **not prove causation**.
+- Inventory CSV analysis of supplied products, unit costs, prices, on-hand stock and sales velocity. Inventory is browser-local, not yet cloud-synced; Soren never supplies a fictional product catalog.
+
+### Talk to a business partner with a personality
+
+- Meta Muse Spark-powered chat when enabled and authenticated, grounded in supplied business records and relevant saved notes.
+- A direct, witty, action-first voice informed by the founder's own retail management judgment: practical, curious, occasionally cheeky, and willing to push back.
+- Clear distinctions among recorded figures, the manager's firsthand observations, calculated comparisons, reasonable hypotheses, and unanswered questions. No public page pretends canned example dialogue came from the live model.
+- A server-side D1 request reservation guard that separates development and judging phases. Reservations are protective internal accounting, not provider billing figures.
+
+## What works
 
 ## Quick judge walkthrough
 
