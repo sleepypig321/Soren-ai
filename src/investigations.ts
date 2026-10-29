@@ -3,6 +3,13 @@ export type Investigation = { id:string; label:string; status:'watch'|'positive'
 const dollars=(n:number)=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:2}).format(n);
 const percent=(n:number)=>Number.isFinite(n)?n.toFixed(1)+'%':'N/A';
 export function investigateRetail(rows:RetailDay[], fixedCosts:number):Investigation[] {
+  if (!rows.length) return [{
+    id:'coverage',label:'Data completeness',status:'unknown',metric:'NO DATA',
+    observation:'No dated financial rows are available for this business workspace.',
+    calculation:'No financial calculation can be made without recorded rows.',
+    limitation:'Missing records are not evidence of zero revenue, zero costs or zero transactions.',
+    nextStep:'Import a valid dated retail report before interpreting business performance.'
+  }];
   const ordered=[...rows].sort((a,b)=>a.date.localeCompare(b.date));
   const total=(items:RetailDay[],key:'revenue'|'transactions'|'cogs')=>items.reduce((sum,row)=>sum+row[key],0);
   const revenue=total(ordered,'revenue'),transactions=total(ordered,'transactions'),cogs=total(ordered,'cogs');
