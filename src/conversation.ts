@@ -1,6 +1,32 @@
 import { supabase, getActiveBusinessId, getActiveBusinessName } from './auth';
+import { loadCloudImport, currentImportScope } from './import-sync';
 
 type Summary = { revenue:number; profit:number; margin:number; transactions:number; average:number; operating:number; days:number; breakEven:number|null };
+type CloverDay = { date:string; net:number };
+type CloverFacts = {
+  kind:'clover';netSales:number;days:number;firstDate:string;lastDate:string;
+  recent7:number|null;prior7:number|null;highest:{date:string;net:number};lowest:{date:string;net:number};
+};
+async function cloverFacts():Promise<CloverFacts|null>{
+  const scope=currentImportScope();if(!scope)return null;
+  let payload:unknown=null;
+  try{payload=await loadCloudImport('clover_daily');}catch{/* Use a valid local copy if the network fails. */}
+  if(!payload){try{const local=localStorage.getItem('soren:clover-daily:v1:'+scope);payload=local?JSON.parse(local):null;}catch{return null;}}
+  const report=(payload as {report?:{days?:CloverDay[];reportedNet?:number}}|null)?.report;
+  if(!report||!Array.isArray(report.days)||report.days.length<1||report.days.length>366||!Number.isFinite(report.reportedNet))return null;
+  if(!report.days.every(d=>typeof d.date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(d.date)&&Number.isFinite(d.net)))return null;
+  const days=[...report.days].sort((a,b)=>a.date.localeCompare(b.date));
+  if(Math.abs(days.reduce((n,d)=>n+d.net,0)-report.reportedNet!)>.02)return null;
+  const now=new Date();const today=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-');
+  const complete=days.at(-1)?.date===today?days.slice(0,-1):days;
+  const recent=complete.slice(-7),prior=complete.slice(-14,-7);
+  const total=(list:CloverDay[])=>list.reduce((n,d)=>n+d.net,0);
+  const highest=complete.length?complete.reduce((a,b)=>a.net>b.net?a:b):days[0];
+  const lowest=complete.length?complete.reduce((a,b)=>a.net<b.net?a:b):days[0];
+  return {kind:'clover',netSales:report.reportedNet!,days:days.length,firstDate:days[0].date,lastDate:days.at(-1)!.date,
+    recent7:recent.length===7?total(recent):null,prior7:prior.length===7?total(prior):null,
+    highest:{date:highest.date,net:highest.net},lowest:{date:lowest.date,net:lowest.net}};
+}
 type Line = { role:'user'|'soren'; text:string };
 type Memory = { id:string; note:string };
 const money=(n:number)=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(n);
@@ -8,7 +34,20 @@ const escape=(s:string)=>s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 let activePanel:HTMLElement|null=null;
 let teardown:(()=>void)|null=null;
 
-function preview(q:string,f:Summary):string {
+function preview(q:string,f:Summary,clover:CloverFacts|null):string {
+  if(clover){
+    if(/profit|loss|cost|margin|expense|break.?even|inventory|stock/i.test(q))
+      return 'I have '+money(clover.netSales)+' in reconciled Clover net sales across '+clover.days+' reporting days. Lovely. But we do not have verified COGS, operating expenses or inventory in this report, so I will not invent profit or stock conclusions. Which costs or records can we add next?';
+    if(/best|highest|peak|worst|lowest|slowest|weakest/i.test(q))
+      return 'Highest complete reported day: '+clover.highest.date+' ('+money(clover.highest.net)+'). Lowest: '+clover.lowest.date+' ('+money(clover.lowest.net)+'). That tells us what happened, not why. Were there changes in hours, promotions or stock availability?';
+    if(/week|trend|growth|change|compare|up|down/i.test(q)){
+      if(clover.recent7===null||clover.prior7===null)return 'I can see '+clover.days+' Clover reporting dates, but need two complete seven-day windows for a fair comparison. A partial week is not a trend, darling.';
+      if(clover.prior7===0)return 'The earlier week had zero recorded net sales. A percentage change would be misleading, so let’s investigate whether the store was closed or the report was incomplete.';
+      const change=(clover.recent7/clover.prior7-1)*100;
+      return 'The latest seven complete days brought in '+money(clover.recent7)+' versus '+money(clover.prior7)+' for the previous seven: '+(change>=0?'+':'')+change.toFixed(1)+'%. That is an observed movement, not proof of a cause. What changed operationally?';
+    }
+    return 'I have your actual Clover report: '+money(clover.netSales)+' net sales from '+clover.firstDate+' through '+clover.lastDate+'. We can examine trends and daily extremes. Transactions, COGS and expenses are missing, so I will not present synthetic profit figures as real. Which question should we investigate first?';
+  }
   if(/break.?even|profit|loss|cost|expense|margin/i.test(q))
     return 'Evidence first: '+money(f.revenue)+' revenue, '+money(f.profit)+' gross profit ('+f.margin.toFixed(1)+'%), and '+money(f.operating)+' modeled operating result. Other operating expenses may be missing. What additional costs should we account for?';
   if(/sales|revenue|traffic|growth|customer|transaction/i.test(q))
@@ -50,11 +89,14 @@ export async function openSorenConversation(facts:Summary,source:string) {
   const userId=user.id;
   const businessId=getActiveBusinessId();
   const businessName=getActiveBusinessName();
+  const clover=await cloverFacts();
+  const displaySource=clover?'CLOVER / ACTUAL NET SALES':source;
+  const displayDays=clover?.days??facts.days;
   const overlay=document.createElement('div');
   overlay.className='soren-conversation-backdrop';
   overlay.innerHTML=`<section class="soren-conversation" role="dialog" aria-modal="true" aria-labelledby="soren-conversation-title">
     <header class="soren-conversation-head"><img src="/soren-dna.png" alt=""/><div><p>SOREN / DIRECT CHANNEL</p><h2 id="soren-conversation-title">Let's talk strategy.</h2></div><button class="soren-conversation-close" aria-label="Close Soren conversation" type="button">×</button></header>
-    <div class="soren-conversation-context"><span class="soren-conversation-dot"></span> <span class="conversation-context-business">${escape(businessName)}</span> <span>·</span> ${escape(source)} <span>·</span> ${facts.days} DAYS</div>
+    <div class="soren-conversation-context"><span class="soren-conversation-dot"></span> <span class="conversation-context-business">${escape(businessName)}</span> <span>·</span> ${escape(displaySource)} <span>·</span> ${displayDays} DAYS</div>
     <div class="soren-memory-bar"><span>BUSINESS MEMORY <strong class="soren-memory-count">0</strong></span><button type="button" class="soren-memory-toggle">MANAGE MEMORY ↗</button></div>
     <section class="soren-memory-list" hidden><p>To save a fact, tell Soren: <strong>Remember: our busiest day is Saturday.</strong></p><div class="soren-memory-items"></div></section>
     <div class="soren-conversation-messages" aria-live="polite" aria-label="Soren conversation"></div>
@@ -157,9 +199,9 @@ export async function openSorenConversation(facts:Summary,source:string) {
             dnaContext=[parts.slice(0,4).join(' | ').slice(0,500),parts.slice(4).join(' | ').slice(0,500)];
           }
         }
-        const res=await fetch('/api/chat',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+session.access_token},body:JSON.stringify({question,facts,history:prior,memories:[...dnaContext,...notes.map(note=>note.note)].slice(0,8)})});
+        const res=await fetch('/api/chat',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+session.access_token},body:JSON.stringify({question,facts:clover??facts,history:prior,memories:[...dnaContext,...notes.map(note=>note.note)].slice(0,8)})});
         const response=await res.json() as {answer?:string;error?:string;demo?:boolean};
-        if(res.status===503&&response.demo)reply=preview(question,facts);
+        if(res.status===503&&response.demo)reply=preview(question,facts,clover);
         else if(res.ok&&response.answer)reply=response.answer;
         else reply=response.error||'Soren is temporarily unavailable.';
       }
