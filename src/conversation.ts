@@ -208,7 +208,7 @@ export async function openSorenConversation(facts:Summary,source:string) {
           const {data,error}=await supabase.from('business_memories').insert({user_id:userId,business_id:businessId,note}).select('id,note').single();
           if(error)throw error;
           notes.unshift(data as Memory);drawMemories();
-          reply='Noted. I saved that to '+businessName+' memory. You can review or delete it any time.'+(followup?' '+preview(followup,facts,clover,previousUserQuestion):'');
+          reply='Noted. I saved that to '+businessName+' memory. You can review or delete it any time.'+(followup?' '+preview(note+'. '+followup,facts,clover,previousUserQuestion):'');
         }
       }else{
         const {data:{session}}=await supabase.auth.getSession();
