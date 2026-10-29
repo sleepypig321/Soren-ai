@@ -10,7 +10,7 @@
     ]
   },
   "vars": {
-    "AI_ENABLED": "false",
+    "AI_ENABLED": "true",
     "AI_PHASE": "development"
   },
   "d1_databases": [
