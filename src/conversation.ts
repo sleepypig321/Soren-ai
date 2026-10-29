@@ -18,10 +18,10 @@ async function cloverFacts():Promise<CloverFacts|null>{
   if(!report||!Array.isArray(report.days)||report.days.length<1||report.days.length>366||!Number.isFinite(report.reportedNet))return null;
   if(!report.days.every(d=>typeof d.date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(d.date)&&Number.isFinite(d.net)))return null;
   const days=[...report.days].sort((a,b)=>a.date.localeCompare(b.date));
-  activeCloverDays=days;
   if(Math.abs(days.reduce((n,d)=>n+d.net,0)-report.reportedNet!)>.02)return null;
   const now=new Date();const today=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-');
   const complete=days.at(-1)?.date===today?days.slice(0,-1):days;
+  activeCloverDays=complete;
   const recent=complete.slice(-7),prior=complete.slice(-14,-7);
   const total=(list:CloverDay[])=>list.reduce((n,d)=>n+d.net,0);
   const highest=complete.length?complete.reduce((a,b)=>a.net>b.net?a:b):days[0];
@@ -43,7 +43,7 @@ function preview(q:string,f:Summary,clover:CloverFacts|null,previousUserQuestion
   const dateMatch=q.match(/(?:since|from|starting|started|on)\s+(?:managing|working|the store|at the store|on)?\s*(?:on\s+)?(\d{4}-\d{2}-\d{2}|(?:October|Oct)\s+\d{1,2}(?:,?\s+\d{4})?)/i);
   if(clover&&dateMatch&&/(since|change|compared|before|after|started|managing)/i.test(q)){
     const rawDate=dateMatch[1];const iso=/^\d{4}-/.test(rawDate)?rawDate:(()=>{const m=rawDate.match(/(?:October|Oct)\s+(\d{1,2})(?:,?\s+(\d{4}))?/i);return m?(m[2]||'2026')+'-10-'+m[1].padStart(2,'0'):''})();
-    const sorted=activeCloverDays.filter(d=>d.date<=clover.lastDate).sort((a,b)=>a.date.localeCompare(b.date));
+    const sorted=activeCloverDays.sort((a,b)=>a.date.localeCompare(b.date));
     const post=sorted.filter(d=>d.date>=iso),before=sorted.filter(d=>d.date<iso).slice(-post.length);
     if(post.length&&before.length===post.length){const sum=(ds:CloverDay[])=>ds.reduce((n,d)=>n+d.net,0);const a=sum(before),b=sum(post);return 'From '+iso+' through '+post.at(-1)!.date+', reported net sales total '+money(b)+' across '+post.length+' reporting days. The immediately preceding '+before.length+' reported days total '+money(a)+'. '+(a===0?'The earlier period is zero, so a percentage comparison would mislead.':'That is '+((b/a-1)*100>=0?'+':'')+((b/a-1)*100).toFixed(1)+'% in equal-length reporting windows.')+' This is an association in timing, not proof that the management change caused it; confirm closures and promotions before attributing a cause.';}
     return 'I can locate '+iso+' in your question, but I cannot construct equal-length before-and-after windows from the available reported dates. I will not compare mismatched periods.';
