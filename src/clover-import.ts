@@ -214,7 +214,7 @@ export function renderCloverImport(container:HTMLElement,accountScope:string){
       }
       dataRevision++;enteredCogs=value;saveCurrent();paint();if(current&&canSyncImports()){const targetScope=scope;void saveCloudImport('clover_daily',{report:current,cogs:enteredCogs,history}).catch(err=>{if(scope===targetScope)container.querySelector<HTMLElement>('#clover-feedback')!.textContent=err.message;});}
     });
-    container.querySelector<HTMLButtonElement>('#clover-clear-cost')?.addEventListener('click',()=>{dataRevision++;enteredCogs='';saveCurrent();paint();if(current&&canSyncImports())void saveCloudImport('clover_daily',{report:current,cogs:enteredCogs}).catch(()=>{});});
+    container.querySelector<HTMLButtonElement>('#clover-clear-cost')?.addEventListener('click',()=>{dataRevision++;enteredCogs='';saveCurrent();paint();if(current&&canSyncImports())void saveCloudImport('clover_daily',{report:current,cogs:enteredCogs,history}).catch(()=>{});});
     container.querySelector<HTMLButtonElement>('#clover-evidence-template')?.addEventListener('click',()=>{
       const rows=[['Data needed','Matching period','Question unlocked','Source'],['Transaction counts',report?.period||'','Average transaction value','Clover orders / transaction report'],['Cost of goods sold',report?.period||'','Gross margin','Actual costs'],['Operating expenses',report?.period||'','Modeled break-even','Fixed and variable; exclude COGS'],['Product movement and stock',report?.period||'','Inventory intelligence','Item-level sales and on-hand']];
       const csv=rows.map(row=>row.map(cell=>'"'+cell.replace(/"/g,'""')+'"').join(',')).join('\r\n');
@@ -240,7 +240,7 @@ export function renderCloverImport(container:HTMLElement,accountScope:string){
         saveCurrent();paint();
         container.querySelector<HTMLElement>('#clover-feedback')!.textContent='Restored '+history.length+' report(s) from your private business workspace.';
       }else if(!payload&&current){
-        await saveCloudImport('clover_daily',{report:current,cogs:enteredCogs});
+        await saveCloudImport('clover_daily',{report:current,cogs:enteredCogs,history});
         if(scope===targetScope)container.querySelector<HTMLElement>('#clover-feedback')!.textContent='Previously saved report synced privately to your business workspace.';
       }
     }).catch(err=>{if(scope===targetScope)container.querySelector<HTMLElement>('#clover-feedback')!.textContent=err instanceof Error?err.message:'Cloud sync unavailable; local copy remains.';});
