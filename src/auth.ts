@@ -18,25 +18,48 @@ let root: HTMLDivElement;
 const escapeText = (s: string) => s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 
 function authScreen(message = '') {
-  root.innerHTML = `<main class="auth-scene">
-    <div class="auth-stars"></div>
-    <section class="auth-card">
-      <img class="auth-emblem" src="/soren-dna.png" alt="Soren's luminous DNA emblem"/>
-      <div class="auth-overline">SOREN / ACCESS PROTOCOL</div>
-      <h1>Your business deserves<br/><em>better intelligence.</em></h1>
-      <p class="auth-intro">Private workspaces. Clear thinking. A partner who tells you what the numbers actually say.</p>
-      <div class="auth-tabs"><button id="tab-login" type="button" class="on">SIGN IN</button><button id="tab-signup" type="button">CREATE ACCOUNT</button></div>
-      <form id="auth-form">
-        <label for="auth-email">EMAIL ADDRESS</label><input id="auth-email" type="email" autocomplete="email" required placeholder="you@business.com"/>
-        <label for="auth-password">PASSWORD</label><input id="auth-password" type="password" autocomplete="current-password" minlength="6" required placeholder="At least 6 characters"/>
-        <button id="email-submit" class="auth-primary" type="submit">SIGN IN WITH EMAIL ↗</button>
-      </form>
-      <div class="auth-separator">OR CONTINUE WITH</div>
-      <button id="google-login" class="auth-google" type="button">G <span>Google</span> ↗</button>
-      <p class="auth-feedback" id="auth-feedback" role="status">${escapeText(message)}</p>
-      <p class="auth-footnote">Business data stays in your private workspace. Never share passwords or secret API keys.</p>
+  root.innerHTML = `<main class="auth-scene auth-landing">
+    <div class="auth-stars" aria-hidden="true"></div>
+    <header class="landing-header">
+      <div class="landing-brand"><img src="/soren-dna.png" alt=""/><span>SOREN<small>INTELLIGENCE WITH INTENTION</small></span></div>
+      <span class="landing-header-note">YOUR BUSINESS. SEEN CLEARLY.</span>
+      <a href="#auth-access" class="landing-header-link">GET STARTED ↗</a>
+    </header>
+    <div class="landing-layout">
+      <section class="landing-story" aria-labelledby="landing-title">
+        <div class="landing-index"><span class="landing-indicator"></span> RETAIL INTELLIGENCE / BUILT FOR REAL OWNERS</div>
+        <h1 id="landing-title">Your numbers<br/>have a <em>story.</em><br/><span>Meet the mind</span><br/>that listens.</h1>
+        <p class="landing-lead">Most dashboards show you what happened. Soren helps you investigate what matters next—with grounded analysis, honest answers, and a conversation that stays with you.</p>
+        <div class="landing-motto"><span>◉</span><p>Less guessing. More knowing.<br/><strong>And yes, you can actually talk to Soren.</strong></p></div>
+        <div class="landing-scroll-note">01 / FROM DATA TO DECISIONS <span>↓</span></div>
+      </section>
+      <section class="auth-card" id="auth-access" aria-label="Sign in or create your Soren account">
+        <img class="auth-emblem" src="/soren-dna.png" alt="Soren's luminous DNA emblem"/>
+        <div class="auth-overline">SOREN / ACCESS PROTOCOL</div>
+        <h2>Your command center<br/><em>starts here.</em></h2>
+        <p class="auth-intro">Private business workspaces. Intelligence with a point of view.</p>
+        <div class="auth-tabs"><button id="tab-login" type="button" class="on">SIGN IN</button><button id="tab-signup" type="button">CREATE ACCOUNT</button></div>
+        <form id="auth-form">
+          <label for="auth-email">EMAIL ADDRESS</label><input id="auth-email" type="email" autocomplete="email" required placeholder="you@business.com"/>
+          <label for="auth-password">PASSWORD</label><input id="auth-password" type="password" autocomplete="current-password" minlength="6" required placeholder="At least 6 characters"/>
+          <button id="email-submit" class="auth-primary" type="submit">SIGN IN WITH EMAIL ↗</button>
+        </form>
+        <div class="auth-separator">OR CONTINUE WITH</div>
+        <button id="google-login" class="auth-google" type="button">G <span>Google</span> ↗</button>
+        <p class="auth-feedback" id="auth-feedback" role="status">${escapeText(message)}</p>
+        <p class="auth-footnote">Your business data belongs in your private workspace. Never share passwords or secret API keys.</p>
+      </section>
+    </div>
+    <section class="landing-capabilities" aria-label="What Soren can do">
+      <div class="landing-section-intro"><p>THE SOREN DIFFERENCE / 001—004</p><h2>Not another dashboard.<br/><em>A sharper perspective.</em></h2></div>
+      <div class="landing-feature-grid">
+        <article class="landing-feature"><span class="landing-feature-icon">⌁</span><span class="landing-feature-number">01 / SEE</span><h3>Find your retail signals.</h3><p>Explore sales patterns, spot unusual days, and follow the evidence behind your store's performance.</p></article>
+        <article class="landing-feature"><span class="landing-feature-icon">▤</span><span class="landing-feature-number">02 / CONNECT</span><h3>Bring your own data.</h3><p>Import CSV reports, including Clover exports. Match unfamiliar columns without rewriting your spreadsheets.</p></article>
+        <article class="landing-feature"><span class="landing-feature-icon">◈</span><span class="landing-feature-number">03 / UNDERSTAND</span><h3>Ask better questions.</h3><p>Talk through business decisions with Soren. He separates what the data proves from what needs investigating.</p></article>
+        <article class="landing-feature"><span class="landing-feature-icon">✧</span><span class="landing-feature-number">04 / REMEMBER</span><h3>Build on every conversation.</h3><p>Keep a business profile, saved context, and private conversation history across your workspace.</p></article>
+      </div>
     </section>
-    <div class="auth-sidenote">INTELLIGENCE WITH INTENTION · SOREN AI</div>
+    <footer class="landing-footer"><span>SOREN AI © 2026</span><span>BUILT FOR OWNERS WHO WANT THE TRUTH, NOT JUST A PRETTY CHART.</span><a href="#auth-access">ENTER SOREN ↑</a></footer>
   </main>`;
   let mode: 'login' | 'signup' = 'login';
   const feedback = root.querySelector<HTMLElement>('#auth-feedback')!;
