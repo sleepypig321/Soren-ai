@@ -1,5 +1,6 @@
 import { supabase, getActiveBusinessId, getActiveBusinessName } from './auth';
 import { loadCloudImport, currentImportScope } from './import-sync';
+import { selectRelevantMemories } from './memory-retrieval';
 
 type Summary = { revenue:number; profit:number; margin:number; transactions:number; average:number; operating:number; days:number; breakEven:number|null };
 type CloverDay = { date:string; net:number };
@@ -223,7 +224,7 @@ export async function openSorenConversation(facts:Summary,source:string) {
             dnaContext=[parts.slice(0,4).join(' | ').slice(0,500),parts.slice(4).join(' | ').slice(0,500)];
           }
         }
-        const relevantNotes=[...notes.slice(0,5),...notes.filter(item=>dateInNote(item.note)).slice(0,3)].filter((item,index,array)=>array.findIndex(x=>x.id===item.id)===index).slice(0,8);
+        const relevantNotes=selectRelevantMemories(notes,question,6);
         const updatedClover=await cloverFacts(relevantNotes);
         const res=await fetch('/api/chat',{method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+session.access_token},body:JSON.stringify({question,facts:updatedClover??(facts.days>0?facts:null),history:prior,memories:[...dnaContext,...relevantNotes.map(item=>item.note.slice(0,300))].slice(0,8)})});
         const response=await res.json() as {answer?:string;error?:string;demo?:boolean};
