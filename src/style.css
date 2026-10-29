@@ -587,3 +587,21 @@ img,svg{max-width:100%}
 .clover-archive-row small{font-size:10px;color:#8dadd5}
 @media(max-width:1150px){.overview-sources{grid-template-columns:1fr 1fr}.overview-link{grid-column:1 / -1}}
 @media(max-width:650px){.business-overview{padding:18px;gap:14px}.business-overview-header{flex-direction:column}.business-overview-grid{gap:8px}.overview-tile{padding:14px}.overview-tile>strong{font-size:25px}.overview-bars{height:110px}.overview-sources{grid-template-columns:1fr}.overview-link{grid-column:auto}.clover-archive-row{align-items:flex-start;flex-direction:column}.clover-archive-row button{width:100%}}
+
+/* Soren Decision Lab: clear, editable scenario assumptions. */
+.prediction-lab{margin:24px 0;padding:clamp(20px,3vw,30px);border:1px solid #8a70de88;border-radius:16px;background:radial-gradient(ellipse at 100% 0,#7a52cd32,transparent 55%),linear-gradient(150deg,#141b3a,#0b142b);box-shadow:0 0 32px #8051cb1b}
+.prediction-head h3{font:600 clamp(23px,2.5vw,31px) Manrope,sans-serif;letter-spacing:-.045em;margin:12px 0 7px;color:#f1edff}
+.prediction-head p{font-size:12px;line-height:1.7;color:#b6c2e0;max-width:720px;margin:0 0 18px}
+.prediction-controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.prediction-controls label{display:flex;flex-direction:column;gap:9px;color:#bbaeff;font-size:10px;font-weight:800;letter-spacing:.09em}
+.prediction-controls input{width:100%;min-width:0;background:#0b1732;border:1px solid #927ccb8c;color:#f4efff;padding:13px;font-size:15px;border-radius:7px}
+.prediction-controls input:focus{outline:2px solid #c2a9ff;outline-offset:2px}
+.prediction-results{margin-top:18px}
+.prediction-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.prediction-grid>div{padding:16px;border:1px solid #8a76b66b;border-radius:9px;background:#1c2245ac;min-width:0}
+.prediction-grid span{display:block;font-size:9px;color:#baa9ed;font-weight:800;letter-spacing:.09em;margin-bottom:10px}
+.prediction-grid strong{font-size:clamp(17px,1.8vw,23px);color:#f5efff;overflow-wrap:anywhere}
+.prediction-note,.prediction-margin{font-size:11px;line-height:1.75;color:#b6c7e1;margin:15px 0 0}
+.prediction-margin{color:#d8bfff}
+@media(max-width:800px){.prediction-controls{grid-template-columns:1fr}.prediction-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:390px){.prediction-grid{grid-template-columns:1fr}}
