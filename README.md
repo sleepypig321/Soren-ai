@@ -57,7 +57,7 @@ The frontend uses TypeScript and Vite, with a Cloudflare Worker chat endpoint an
 
 ## Originality and boundaries
 
-Soren's code was developed during the hackathon and is separate from Fern's earlier projects, including Ostara and SYION. Earlier business experience inspired the concept; this repository is the new implementation.
+Soren is an original implementation developed during the October 26–November 4, 2026 hackathon. The submitted code and application are contained in this public repository.
 
 Soren is a decision-support product, not an accounting system or a source of independently verified explanations for business results. Its voice is deliberately distinctive, but no static canned dialogue is presented as a live AI answer.
 
