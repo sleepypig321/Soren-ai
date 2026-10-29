@@ -196,11 +196,11 @@ export async function openSorenConversation(facts:Summary,source:string) {
     try{
       await saveLine(userId,businessId,userLine);
       let reply:string;
-      const remembered=/^remember(?:\\s+that)?\\s*:?\\s+(.+)$/i.exec(question);
+      const remembered=/^remember(?:\s+that)?\s*:?\s+(.+)$/i.exec(question);
       if(remembered){
         const full=remembered[1].trim();
-        const split=full.match(/^(.+?\\.)(?:\\s+)(.+\\?)$/);
-        const note=(split?split[1]:full).replace(/\\.$/,'').trim();
+        const split=full.match(/^(.+?\.)(?:\s+)(.+\?)$/);
+        const note=(split?split[1]:full).replace(/\.$/,'').trim();
         const followup=split?split[2].trim():'';
         if(!businessId)reply='Create or select a business workspace first, then I can remember facts specifically for that business.';
         else if(!note||note.length>500)reply='Keep a memory between 1 and 500 characters, partner.';
