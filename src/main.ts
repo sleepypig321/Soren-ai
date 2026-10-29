@@ -1,4 +1,5 @@
 import './style.css';
+import { normalizeColumns, type FieldSpec } from './column-map';
 import { canSyncImports, loadCloudImport, saveCloudImport, removeCloudImport } from './import-sync';
 import { openSorenConversation, attachSorenLauncher } from './conversation';
 import { initAuth, addAccountToolbar, getActiveBusinessId, getActiveUserId } from './auth';
@@ -65,6 +66,12 @@ const app = document.querySelector<HTMLDivElement>('#app')!;
 const money = (n:number) => new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(n);
 const pct = (n:number) => Number.isFinite(n) ? n.toFixed(1)+'%' : 'N/A';
 const escapeHTML = (s:string) => s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
+const financialFields:FieldSpec[]=[
+  {key:'date',label:'Sale date',required:true,aliases:['day','sales date','transaction date','business date','report date']},
+  {key:'revenue',label:'Revenue',required:true,aliases:['net sales','sales','sales total','total net sales','net revenue','net amount']},
+  {key:'transactions',label:'Transaction count',required:true,aliases:['orders','order count','number of orders','transactions count','transaction qty','receipts','number of transactions']},
+  {key:'cogs',label:'Cost of goods sold',required:true,aliases:['cost of goods','costs of goods sold','total cogs','product costs','goods cost']}
+];
 function parseCSV(text:string): Sale[] {
   if(/^\uFEFF?Sales Report(?:,|\r?\n)/.test(text.trimStart()) || text.trimStart().startsWith('Sales Report'))throw Error('This is a Clover Sales Report. Use “IMPORT CLOVER DAILY CSV” in the Clover / Retail Data Bridge below. The financial demo importer expects date,revenue,transactions,cogs.');
   const records:string[][]=[]; let row:string[]=[];let cell='';let quoted=false;
@@ -199,7 +206,7 @@ function render(){
   document.querySelector('#reset')!.addEventListener('click',()=>{financialRevision++;sales=[...demo];source='Synthetic sample';fixedCosts=1250;selectedInsight='revenue';saveFinancialImport();if(canSyncImports())void removeCloudImport('financial_daily').catch(()=>{});render();});
   document.querySelector<HTMLInputElement>('#file')!.addEventListener('change',async e=>{
     const file=(e.target as HTMLInputElement).files?.[0];if(!file)return;
-    try{if(file.size>200000)throw Error('File exceeds 200 KB.');financialRevision++;sales=parseCSV(await file.text());source=file.name;selectedInsight='revenue';const saved=saveFinancialImport();if(canSyncImports()){const targetScope=importedScope;void saveCloudImport('financial_daily',{sales,source,fixedCosts}).then(()=>{if(importedScope===targetScope){financialCloudStatus='SYNCED TO PRIVATE CLOUD';render();}}).catch(()=>{if(importedScope===targetScope){financialCloudStatus='OFFLINE / LOCAL COPY AVAILABLE';render();}});}render();if(!saved)alert('File imported for this session, but this browser could not store it for future visits.');}
+    try{if(file.size>200000)throw Error('File exceeds 200 KB.');financialRevision++;sales=parseCSV(await normalizeColumns(await file.text(),financialFields,'daily financial report'));source=file.name;selectedInsight='revenue';const saved=saveFinancialImport();if(canSyncImports()){const targetScope=importedScope;void saveCloudImport('financial_daily',{sales,source,fixedCosts}).then(()=>{if(importedScope===targetScope){financialCloudStatus='SYNCED TO PRIVATE CLOUD';render();}}).catch(()=>{if(importedScope===targetScope){financialCloudStatus='OFFLINE / LOCAL COPY AVAILABLE';render();}});}render();if(!saved)alert('File imported for this session, but this browser could not store it for future visits.');}
     catch(err){alert(err instanceof Error?err.message:'Unable to read CSV');}
   });
   if(activePage==='data')renderCloverImport(document.querySelector<HTMLElement>('.clover-import')!, (getActiveUserId()??'signed-out')+':'+(getActiveBusinessId()??'personal'));
