@@ -41,3 +41,14 @@ test('empty financial rows produce an honest no-data finding without crashing', 
   assert.equal(result[0].metric,'NO DATA');
   assert.match(result[0].limitation,/not evidence of zero revenue/);
 });
+
+test('calendar gaps suppress growth percentages instead of implying continuous weeks', () => {
+  const result=findings([
+    day('2026-10-01',100,5,50),day('2026-10-02',120,6,55),
+    day('2026-10-10',300,8,150),day('2026-10-11',350,9,180)
+  ]);
+  assert.equal(result.trend.status,'unknown');
+  assert.equal(result.trend.metric,'INSUFFICIENT DATA');
+  assert.match(result.trend.observation,/calendar gaps/);
+  assert.match(result.trend.calculation,/No valid continuous-period comparison/);
+});
