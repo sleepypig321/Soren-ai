@@ -158,7 +158,7 @@ function render(){
           '<div class="crosshair crosshair-one">+</div><div class="crosshair crosshair-two">+</div>'+
           '<div class="orbit-core" id="soren-core" role="button" tabindex="0" aria-label="Talk to Soren"><div class="core-aura"></div><div class="core-disc"><img src="/soren-dna.png" alt="Soren glowing DNA emblem"/></div><span class="core-label">SOREN / CORE</span></div>'+
           orbitItems.map(([id,label,value])=>'<button class="signal signal-'+id+(id===selectedInsight?' selected':'')+'" data-focus="'+id+'" aria-pressed="'+(id===selectedInsight)+'"><span class="signal-point"></span><span class="signal-caption">'+label+'</span><strong>'+value+'</strong></button>').join('')+
-          '<div class="orbit-footer"><span>BUSINESS SYSTEM / '+(hasFinancial?s.days+' DAY WINDOW':'AWAITING FINANCIAL DATA')</span><span>04 CONNECTED SIGNALS</span></div>'+
+          '<div class="orbit-footer"><span>BUSINESS SYSTEM / '+(hasFinancial?s.days+' DAY WINDOW':'AWAITING FINANCIAL DATA')+'</span><span>04 CONNECTED SIGNALS</span></div>'+
         '</section>'+
         '<section class="intelligence-brief" aria-live="polite">'+
           '<div class="brief-top"><span class="mini-mark">✳</span><span>SOREN / LIVE BRIEFING</span><span class="muted-dot">● LOCAL</span></div>'+
