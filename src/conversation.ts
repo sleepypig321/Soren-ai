@@ -135,6 +135,7 @@ export async function openSorenConversation(facts:Summary,source:string) {
     closed=true;
     document.removeEventListener('keydown',onKey);
     window.removeEventListener('soren:auth-changed',onAuthChanged);
+    window.removeEventListener('soren:business-changed',onBusinessChanged);
     overlay.remove();if(activePanel===overlay)activePanel=null;
     teardown=null;
   }
@@ -144,6 +145,9 @@ export async function openSorenConversation(facts:Summary,source:string) {
   overlay.addEventListener('click',e=>{if(e.target===overlay)close();});
   const onAuthChanged=()=>{void supabase.auth.getUser().then(({data})=>{if(!data.user||data.user.id!==userId)close();});};
   window.addEventListener('soren:auth-changed',onAuthChanged);
+  // Keep the open conversation scoped to the business that created it.
+  const onBusinessChanged=()=>close();
+  window.addEventListener('soren:business-changed',onBusinessChanged);
   function draw() {
     const visible:Line[]=[{role:'soren',text:"Good to see you, partner. What's on your mind?"},...lines];
     messages.innerHTML=visible.map(line=>'<article class="soren-line '+line.role+'"><span>'+(line.role==='soren'?'SOREN':'YOU')+'</span><p>'+formatChatText(line.text)+'</p></article>').join('');
