@@ -20,7 +20,8 @@ export function investigateRetail(rows:RetailDay[], fixedCosts:number):Investiga
   const last=ordered.slice(Math.floor(ordered.length/2));
   const earlyAverage=first.length?total(first,'revenue')/first.length:0;
   const lateAverage=last.length?total(last,'revenue')/last.length:0;
-  const change=earlyAverage>0?((lateAverage/earlyAverage)-1)*100:null;
+  const consecutive=ordered.every((row,i)=>i===0||Date.parse(row.date+'T00:00:00Z')-Date.parse(ordered[i-1].date+'T00:00:00Z')===86400000);
+  const change=consecutive&&earlyAverage>0?((lateAverage/earlyAverage)-1)*100:null;
   const breakeven=margin>0?fixedCosts/margin:null;
   const low=ordered.reduce((a,b)=>a.revenue<b.revenue?a:b);
   const high=ordered.reduce((a,b)=>a.revenue>b.revenue?a:b);
@@ -33,8 +34,8 @@ export function investigateRetail(rows:RetailDay[], fixedCosts:number):Investiga
   return [
     {id:'trend',label:'Revenue momentum',status:change===null||ordered.length<4?'unknown':change< -10?'watch':'positive',
       metric:change===null||ordered.length<4?'INSUFFICIENT DATA':(change>=0?'+':'')+percent(change),
-      observation:ordered.length<4?'At least four recorded days are needed for a meaningful first-half comparison.':change===null?'The initial comparison group had zero revenue, so a percentage change is undefined.':'The later '+last.length+' recorded day(s) averaged '+dollars(lateAverage)+'/day versus '+dollars(earlyAverage)+'/day across the first '+first.length+'.',
-      calculation:ordered.length<4?'No period comparison.':'(Later group daily average ÷ earlier group daily average − 1) × 100.',
+      observation:ordered.length<4?'At least four recorded days are needed for a meaningful first-half comparison.':!consecutive?'Reported days contain calendar gaps, so a continuous-period percentage comparison would be misleading.':change===null?'The initial comparison group had zero revenue, so a percentage change is undefined.':'The later '+last.length+' recorded day(s) averaged '+dollars(lateAverage)+'/day versus '+dollars(earlyAverage)+'/day across the first '+first.length+'.',
+      calculation:ordered.length<4||!consecutive?'No valid continuous-period comparison.':'(Later group daily average ÷ earlier group daily average − 1) × 100.',
       limitation:'A short sample, day-of-week mix and missing days may distort this comparison. It does not establish why sales changed.',
       nextStep:'Check foot traffic, promotions, stock availability and staffing before attributing the shift to a cause.'},
     {id:'profit',label:'Operating pressure',status:result<0?'watch':'positive',metric:dollars(result),
