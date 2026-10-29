@@ -1,36 +1,39 @@
 # SOREN — Intelligence With Intention
 
-**AI business development partner · Meta Global AI Developer Hackathon 2026**
+**Meta Global AI Developer Hackathon 2026 · AI business intelligence partner for independent retailers**
 
-Soren is an original, independent build started during the **October 26 – November 4, 2026** hackathon. It helps business owners inspect sales data, detect opportunities worth investigating, and turn evidence into strategic action. The personality is confident, sharp, warm, and sometimes funny; it never substitutes attitude for evidence.
+Soren is a new, independent project built during the October 26–November 4, 2026 hackathon. It combines a private, multi-business workspace, retained sales-report history, deterministic retail analysis, dated operational memory, and a candid conversational AI persona. The goal is to help a manager connect what happened on the floor with what the numbers actually show—without confusing a plausible explanation with proof.
 
-## What's implemented (October 27)
+**Live app:** https://soren-ai.fern-croxton.workers.dev
 
-- Bespoke, responsive cosmic intelligence observatory: animated DNA core, connected metric signals, evidence briefing, operating pulse, and data controls.
-- Synthetic retail sample data (no real customer or store records).
-- Local CSV import with schema and numeric validation.
-- Deterministic financial analysis: revenue, gross profit, gross margin, average transaction value, modeled operating result, and break-even revenue.
-- Variability findings that distinguish observations from causal claims.
-- A **fail-closed** Cloudflare Worker API scaffold. Live Meta calls are deliberately **disabled** until an enforceable request/spending guard is deployed. The app can be explored without consuming API credits.
+## What works
 
-**Not implemented yet:** working Muse Spark inference, a quota guard, deployment, and automated test coverage. Do not describe these as finished in a hackathon demo.
+- Google and email authentication; separate private business workspaces.
+- Clover Daily Sales Report CSV import, with date and reported-total validation.
+- Multiple saved Clover reports, merged into a chronological history; later imports supersede overlapping daily dates instead of double-counting them.
+- Custom daily financial CSV import (date, revenue, transactions, COGS), with separately retained report history and period-appropriate optional fixed costs.
+- Business overview and evidence-based investigation panels using imported figures, including recent-versus-prior seven-day net sales where a complete comparison is available.
+- Inventory CSV analysis for actual supplied product, cost, stock, and sales-velocity fields; no fictional catalog. Inventory is browser-local, not synced to the cloud.
+- Soren chat powered by Meta Muse Spark when enabled and authenticated. The AI is instructed to distinguish observed figures, owner-provided observations, hypotheses, and missing information, while speaking with a frank, playful, action-first personality.
+- Business notes and relevant dated milestones used as context for sales comparisons. Timing can suggest hypotheses, **not prove causality**.
+- Private account-scoped data import synchronization when online, with a browser-local copy as fallback. Avoid using shared devices for sensitive business reports.
+- A server-side D1 request reservation guard that separates development and judging phases. Reservations are protective accounting, not actual provider billing figures.
 
-## Run locally
+## Quick judge walkthrough
 
-Requirements: Node.js 20+ and npm.
+1. Open the live app and sign in; choose or create a private business workspace.
+2. Open Data Sources and import a genuine Clover Daily Sales Report CSV in **Daily** view. The business overview and retail investigation update from these records.
+3. Import another reporting period to see the retained report archive and merged timeline. Overlapping dates are replaced by the most recent report.
+4. In Business DNA, save a dated management observation (for example, a changed store schedule). Ask Soren to examine sales before and after the date. He should distinguish factual net-sales movements from unproven causes.
+5. Ask a practical operational question to see the combination of evidence-based judgment and blunt conversational voice.
 
-```bash
-npm install
-npm run dev
-```
+**Important:** The site does not ship with fabricated sales, costs, inventory, or preview AI answers. Demonstrate with your own authorized data. Avoid exposing confidential details in the public submission video.
 
-Open the Vite URL shown in your terminal. Build with:
+## Data requirements and limits
 
-```bash
-npm run build
-```
+Clover's Daily Sales Report supports reported **net sales**, not automatically transactions, COGS, employee conversion, actual store opening hours, or causation. Profit and margin require separate real cost information. A business with no imported data should show missing/unknown states, not zero-dollar results or invented forecasts.
 
-The public demo uses a synthetic dataset until you import your own CSV. The expected columns are:
+Custom financial CSV uses columns such as:
 
 ```csv
 date,revenue,transactions,cogs
@@ -38,23 +41,34 @@ date,revenue,transactions,cogs
 2026-10-02,89,5,54
 ```
 
-Enter **fixed costs for the same reporting period** as the CSV. If you upload 14 days, enter fixed costs for those 14 days, not a whole month. Operating result is a scenario computed as gross profit minus the entered fixed costs; other operating expenses may be missing. This is not accounting advice.
+Inventory CSV requires `sku,name,unit_cost,price,on_hand,sold_30d` (optional `reorder_point,lead_days`). Sales/line-items exports alone cannot establish live stock on hand.
 
-## Meta integration plan
+## Run and build
 
-Intended model: `muse-spark-1.3`, using Meta Model API's Chat Completions endpoint `https://api.meta.ai/v1/chat/completions`. Meta documents bearer-token authorization with `MODEL_API_KEY`: https://dev.meta.ai/docs/cookbook/quickstart-chat-completions
+Requires Node.js 20+.
 
-**Never commit a key.** Store it as a Cloudflare secret; enable live usage only after implementing and verifying a durable, atomic quota guard and reviewing billing behavior. Promotional credits may permit Meta to use prompts and responses for product improvement. Do not upload confidential business data.
+```bash
+npm install
+npm run build
+npm run dev
+```
 
-## Hackathon originality
+The frontend uses TypeScript and Vite, with a Cloudflare Worker chat endpoint and Supabase authentication/private persistence. Never commit API keys. The Meta API key belongs in a Cloudflare secret. Model calls are guarded and can be disabled by deployment configuration.
 
-This repository contains only new work developed for the event. Soren is a separate product and does not import code from SYION or Ostara. The demo should begin by identifying any pre-existing ideas and clearly stating that the submitted implementation was developed during the hackathon.
+## Originality and boundaries
 
-## Next milestones
+Soren's code was developed during the hackathon and is separate from Fern's earlier projects, including Ostara and SYION. Earlier business experience inspired the concept; this repository is the new implementation.
 
-1. Automated tests for CSV parsing and calculations.
-2. Secure quota/rate-limit service and controlled Meta calls.
-3. AI response evaluation using synthetic business scenarios.
-4. Deployed demo, documentation, and three-minute submission video.
+Soren is a decision-support product, not an accounting system or a source of independently verified explanations for business results. Its voice is deliberately distinctive, but no static canned dialogue is presented as a live AI answer.
 
-License not selected yet; all rights reserved until an explicit license is added.
+## Submission checklist
+
+- [x] Public source repository
+- [x] Deployed application with account and business workspaces
+- [x] Real-data CSV imports and retained report history
+- [x] Evidence-based investigation and contextual AI conversation
+- [ ] Record and review a video of **three minutes or less**
+- [ ] Verify one signed-in end-to-end scenario, if judging credits allow
+- [ ] Submit the project link, repository, and video before the official deadline
+
+License not selected; all rights reserved unless a license is added.
