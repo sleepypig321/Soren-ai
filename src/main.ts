@@ -1,4 +1,5 @@
 import './style.css';
+import { compareReportingWeeks } from './reporting-weeks';
 import { normalizeColumns, type FieldSpec } from './column-map';
 import { canSyncImports, loadCloudImport, saveCloudImport, removeCloudImport } from './import-sync';
 import { openSorenConversation, attachSorenLauncher } from './conversation';
@@ -161,10 +162,8 @@ function render(){
   const salesTotal=hasFinancial?s.revenue:cloverDays.reduce((n,day)=>n+day.net,0);
   const salesSource=hasFinancial?source:cloverSource;
   const salesCount=hasFinancial?s.days:cloverDays.length;
-  const completeSales=salesDays.filter(d=>{const t=new Date();const today=[t.getFullYear(),String(t.getMonth()+1).padStart(2,'0'),String(t.getDate()).padStart(2,'0')].join('-');return d.date!==today;});
-  const weekRecent=completeSales.slice(-7),weekPrior=completeSales.slice(-14,-7);
-  const weekSum=(list:{date:string;revenue:number}[])=>list.reduce((n,d)=>n+d.revenue,0);
-  const weekChange=weekRecent.length===7&&weekPrior.length===7&&weekSum(weekPrior)>0?(weekSum(weekRecent)/weekSum(weekPrior)-1)*100:null;
+  const weekComparison=compareReportingWeeks(salesDays);
+  const weekChange=weekComparison?.changePercent??null;
   const high=ordered.length?ordered.reduce((a,b)=>a.revenue>b.revenue?a:b):{date:'',revenue:0};
   const low=ordered.length?ordered.reduce((a,b)=>a.revenue<b.revenue?a:b):{date:'',revenue:0};
   const options:Record<string,{label:string,value:string,context:string,evidence:string,action:string}> = {
@@ -223,7 +222,7 @@ function render(){
           '<div class="business-overview-header"><div><span class="section-index">BUSINESS COMMAND CENTER / VERIFIED DATA</span><h2>Your business at a glance.</h2><p>Connected reports power the numbers. Anything unknown stays unknown.</p></div><span class="business-overview-live">'+(hasSales?'● SALES CONNECTED':'○ AWAITING REPORT')+'</span></div>'+
           '<div class="business-overview-grid">'+
             '<article class="overview-tile overview-tile-revenue"><span>REPORTED SALES</span><strong>'+(hasSales?money(salesTotal):'—')+'</strong><small>'+(hasSales?salesCount+' reporting days':'No sales report uploaded')+'</small></article>'+
-            '<article class="overview-tile"><span>WEEK-OVER-WEEK</span><strong>'+(weekChange===null?'—':(weekChange>=0?'+':'')+weekChange.toFixed(1)+'%')+'</strong><small>'+(weekChange===null?'Need two full seven-day periods':'Last seven reported days vs prior seven')+'</small></article>'+
+            '<article class="overview-tile"><span>WEEK-OVER-WEEK</span><strong>'+(weekChange===null?'—':(weekChange>=0?'+':'')+weekChange.toFixed(1)+'%')+'</strong><small>'+(!weekComparison?'Need 14 consecutive complete dates':weekChange===null?'Prior seven-day net sales must be above zero':weekComparison.recent[0].date+'–'+weekComparison.recent[6].date+' vs prior seven days')+'</small></article>'+
             '<article class="overview-tile"><span>TRANSACTIONS</span><strong>'+(hasFinancial?String(s.transactions):'—')+'</strong><small>'+(hasFinancial?'From financial CSV':'Orders data not supplied')+'</small></article>'+
             '<article class="overview-tile"><span>GROSS MARGIN</span><strong>'+(hasFinancial?pct(s.margin):'—')+'</strong><small>'+(hasFinancial?'From supplied COGS':'Product costs not supplied')+'</small></article>'+
           '</div>'+
@@ -287,7 +286,7 @@ function render(){
     catch(err){alert(err instanceof Error?err.message:'Unable to read CSV');}
   });
   if(activePage==='data')renderCloverImport(document.querySelector<HTMLElement>('.clover-import')!, (getActiveUserId()??'signed-out')+':'+(getActiveBusinessId()??'personal'));
-  if(activePage==='decisions')renderPredictionCalculator(document.querySelector<HTMLElement>('.prediction-lab')!,salesDays,salesSource);
+  if(activePage==='decisions')renderPredictionCalculator(document.querySelector<HTMLElement>('.prediction-lab')!,salesDays,salesSource,draft=>{void openSorenConversation(s,source,draft);});
   if(activePage==='inventory')renderInventory(document.querySelector<HTMLElement>('.inventory-deck')!, (getActiveUserId()??'signed-out')+':'+(getActiveBusinessId()??'personal'));
   const beginConversation = () => openSorenConversation(s, source);
   document.querySelector<HTMLButtonElement>('#investigate-chat')?.addEventListener('click', beginConversation);
@@ -299,3 +298,4 @@ window.addEventListener('popstate', () => { activePage = getPage(); render(); wi
 window.addEventListener('soren:business-changed', () => { render(); });
 window.addEventListener('soren:clover-changed', () => { cloverScope='';render(); });
 initAuth(app, render);
+

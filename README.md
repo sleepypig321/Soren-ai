@@ -42,7 +42,7 @@ The architecture is designed to grow into additional industry-specific modules w
 
 ### Investigate retail performance without fake certainty
 
-- Business overview and evidence-based investigation panels using imported figures, including recent-versus-prior seven-day net sales where a complete comparison is available.
+- Business overview and evidence-based investigation panels using imported figures, including recent-versus-prior seven-day net sales where two adjacent, complete seven-calendar-day windows are available. Dashboard and chat share this comparison logic; missing dates suppress weekly growth, and zero/negative prior net sales suppress a percentage claim.
 - Dated management notes that provide context for before-and-after sales comparisons. A timing relationship is meaningful to investigate but does **not prove causation**.
 - Inventory CSV analysis of supplied products, unit costs, prices, on-hand stock and sales velocity. Inventory is browser-local, not yet cloud-synced; Soren never supplies a fictional product catalog.
 
@@ -50,6 +50,7 @@ The architecture is designed to grow into additional industry-specific modules w
 
 - Decision Lab models future reporting days using up to 30 recorded complete sales days and a user-entered revenue change.
 - Compare up to three named scenarios side by side, including each horizon, margin assumption, baseline revenue, modeled revenue difference and gross profit before operating expenses.
+- Open a reviewable chat draft from Decision Lab with the scenario baseline, dates, assumptions, modeled revenue and gross profit. The owner reviews and sends it; opening the draft does not call Meta.
 - Export a comparison CSV with the source, baseline dates, reporting gaps, assumptions and limitations. Comparisons are temporary on-screen snapshots, cleared when leaving or rerendering the page; export before navigating away.
 - Unknown margins stay unknown. These are arithmetic what-if scenarios, not statistically validated forecasts or causal claims.
 

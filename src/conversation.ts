@@ -1,6 +1,7 @@
 import { supabase, getActiveBusinessId, getActiveBusinessName } from './auth';
 import { loadCloudImport, currentImportScope } from './import-sync';
 import { selectRelevantMemories } from './memory-retrieval';
+import { compareReportingWeeks, localReportingDate } from './reporting-weeks';
 
 type Summary = { revenue:number; profit:number; margin:number; transactions:number; average:number; operating:number; days:number; breakEven:number|null };
 type CloverDay = { date:string; net:number };
@@ -31,13 +32,8 @@ async function cloverFacts(notes:{note:string}[]=[]):Promise<CloverFacts|null>{
   if(!report.days.every(d=>typeof d.date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(d.date)&&Number.isFinite(d.net)))return null;
   const days=[...report.days].sort((a,b)=>a.date.localeCompare(b.date));
   if(Math.abs(days.reduce((n,d)=>n+d.net,0)-report.reportedNet!)>.02)return null;
-  const now=new Date();const today=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-');
-  const complete=days.at(-1)?.date===today?days.slice(0,-1):days;
-  const recent=complete.slice(-7),prior=complete.slice(-14,-7);
-  const recentContinuous=recent.length===7&&recent.every((day,i)=>i===0||Date.parse(day.date+'T00:00:00Z')-Date.parse(recent[i-1].date+'T00:00:00Z')===86400000);
-  const priorContinuous=prior.length===7&&prior.every((day,i)=>i===0||Date.parse(day.date+'T00:00:00Z')-Date.parse(prior[i-1].date+'T00:00:00Z')===86400000);
-  const periodsAdjacent=recentContinuous&&priorContinuous&&Date.parse(recent[0].date+'T00:00:00Z')-Date.parse(prior[6].date+'T00:00:00Z')===86400000;
-  const total=(list:CloverDay[])=>list.reduce((n,d)=>n+d.net,0);
+  const complete=days.filter(day=>day.date<localReportingDate());
+  const comparison=compareReportingWeeks(days.map(day=>({date:day.date,revenue:day.net})));
   const highest=complete.length?complete.reduce((a,b)=>a.net>b.net?a:b):days[0];
   const lowest=complete.length?complete.reduce((a,b)=>a.net<b.net?a:b):days[0];
   const monthlyMap=new Map<string,{month:string;reportedDays:number;net:number}>();
@@ -58,7 +54,7 @@ async function cloverFacts(notes:{note:string}[]=[]):Promise<CloverFacts|null>{
       changePct:before.length===7&&after.length===7&&beforeNet>0?Math.round((afterNet/beforeNet-1)*1000)/10:null}];
   }).slice(0,5);
   return {kind:'clover',netSales:report.reportedNet!,days:days.length,firstDate:days[0].date,lastDate:days.at(-1)!.date,
-    recent7:periodsAdjacent?total(recent):null,prior7:periodsAdjacent?total(prior):null,
+    recent7:comparison?.recentTotal??null,prior7:comparison?.priorTotal??null,
     highest:{date:highest.date,net:highest.net},lowest:{date:lowest.date,net:lowest.net},
     monthly:[...monthlyMap.values()].slice(-24),daily:complete.slice(-60),milestones};
 }
@@ -102,7 +98,7 @@ export function attachSorenLauncher(root:HTMLDivElement,facts:Summary,source:str
   root.appendChild(button);
   button.addEventListener('click',()=>{void openSorenConversation(facts,source);});
 }
-export async function openSorenConversation(facts:Summary,source:string) {
+export async function openSorenConversation(facts:Summary,source:string,initialDraft='') {
   if(activePanel)return;
   const {data:{user},error:userError}=await supabase.auth.getUser();
   if(userError||!user){alert('Please sign in to speak with Soren.');return;}
@@ -243,5 +239,7 @@ export async function openSorenConversation(facts:Summary,source:string) {
     }finally{submit.disabled=false;if(!closed)input.focus();}
   });
   input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();overlay.querySelector<HTMLFormElement>('.soren-conversation-form')!.requestSubmit();}});
+  input.value=initialDraft.slice(0,600);
   input.focus();
 }
+
