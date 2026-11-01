@@ -61,15 +61,15 @@ The architecture is designed to grow into additional industry-specific modules w
 - Clear distinctions among recorded figures, the manager's firsthand observations, calculated comparisons, reasonable hypotheses, and unanswered questions. No public page pretends canned example dialogue came from the live model.
 - A server-side D1 request reservation guard that separates development and judging phases. Reservations are protective internal accounting, not provider billing figures.
 
-## What works
-
 ## Quick judge walkthrough
 
 1. Open the live app and sign in; choose or create a private business workspace.
 2. Open Data Sources and import a genuine Clover Daily Sales Report CSV in **Daily** view. The business overview and retail investigation update from these records.
 3. Import another reporting period to see the retained report archive and merged timeline. Overlapping dates are replaced by the most recent report.
 4. In Business DNA, save a dated management observation (for example, a changed store schedule). Ask Soren to examine sales before and after the date. He should distinguish factual net-sales movements from unproven causes.
-5. Ask a practical operational question to see the combination of evidence-based judgment and blunt conversational voice.
+5. Open Decision Lab and model the same future reporting horizon under two explicit revenue-change assumptions. Add both to the comparison and export the CSV. These are arithmetic what-if scenarios, not validated predictions.
+6. Click **ASK SOREN ABOUT THIS** to open a reviewable chat draft containing the scenario baseline, assumptions and modeled results. Review it before sending; opening the draft does not spend model credits.
+7. Ask Soren to challenge the assumptions and suggest a measurable test. Check the actual response against the supplied report rather than assuming every model answer is correct.
 
 **Important:** The site does not ship with fabricated sales, costs, inventory, or preview AI answers. Demonstrate with your own authorized data. Avoid exposing confidential details in the public submission video.
 
@@ -101,7 +101,7 @@ Run `npm test` to exercise the SQL limiter with SQLite and the chat handler with
 
 ## Run and build
 
-Requires Node.js 20+.
+Requires Node.js 22.13+ (the test suite uses built-in TypeScript stripping and SQLite).
 
 ```bash
 npm install
