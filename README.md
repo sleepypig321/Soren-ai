@@ -86,6 +86,18 @@ date,revenue,transactions,cogs
 
 Inventory CSV requires `sku,name,unit_cost,price,on_hand,sold_30d` (optional `reorder_point,lead_days`). Sales/line-items exports alone cannot establish live stock on hand.
 
+## AI access and usage safeguards
+
+- Chat accepts POST requests only and verifies the Bearer token with Supabase Auth before parsing protected input. The verified user ID, not a client-supplied ID, selects the usage counter. Anonymous Auth accounts cannot call the model.
+- Each account may reserve up to **3 requests per fixed UTC minute** and **20 per UTC day**. D1 stores counters persistently and enforces both limits in one atomic UPSERT across Worker instances. Rejections return HTTP 429 and a Retry-After header.
+- The Worker creates the idempotent user-counter table in the existing AI_BUDGET_DB binding on first use; no additional binding or client-side provisioning is required. A database error blocks the call.
+- The existing global allowance remains separate: up to 100 development requests, or 500 cumulative requests after the owner explicitly enables the judging phase. Each approved model call reserves 20 cents from the internal ledger before contacting Meta. Failed upstream calls retain their reservations.
+- These reservations are **internal request controls, not a provider-enforced dollar spending cap**. Multiple accounts can still consume the shared development allowance, but cannot bypass that global request ceiling.
+- The Meta key is read only from the Worker secret `MODEL_API_KEY`; it is never returned in API responses. Actual body bytes are capped at 12,000 before JSON parsing, and question/history/context/output lengths are bounded.
+- The kill switch `AI_ENABLED` must equal `true`; missing secrets, database bindings, unsafe phases, failed authentication checks and unavailable protection storage block model requests.
+
+Run `npm test` to exercise the SQL limiter with SQLite and the chat handler with mocked Auth/model requests; these tests do not spend Meta credits.
+
 ## Run and build
 
 Requires Node.js 20+.

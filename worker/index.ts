@@ -1,11 +1,7 @@
 import { buildIntelligenceInstructions } from './intelligence';
+import { reserveUserRequest, readChatJSON, RequestInputError, type GuardDatabase } from './request-guards';
 type D1Row = { remaining_cents: number };
-type D1Binding = {
-  prepare(query: string): {
-    bind(...values: unknown[]): { first<T>(): Promise<T | null> };
-    first<T>(): Promise<T | null>;
-  };
-};
+type D1Binding = GuardDatabase;
 type Env = {
   ASSETS: { fetch(request: Request): Promise<Response> };
   MODEL_API_KEY?: string;
@@ -18,8 +14,8 @@ const SUPABASE_URL = 'https://oclhhrnlltocibkuinie.supabase.co';
 // Browser-publishable key; never use Supabase service-role keys in this Worker.
 const SUPABASE_KEY = 'sb_publishable_s15hLVfl6A1X0GAivOhXjw_q0yrwq8W';
 const MODEL_URL = 'https://api.meta.ai/v1/chat/completions';
-const json = (value: unknown, status = 200) => new Response(JSON.stringify(value), {
-  status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }
+const json = (value: unknown, status = 200, extraHeaders:Record<string,string>={}) => new Response(JSON.stringify(value), {
+  status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options':'nosniff', ...extraHeaders }
 });
 const SYSTEM = [
   buildIntelligenceInstructions('retail'),
@@ -35,14 +31,16 @@ const SYSTEM = [
   
   'VOICE IN PRACTICE: Lead with a candid, specific reaction rather than a consultancy framing. When context is casual, let humor and a direct truth naturally coexist in the same sentence. Avoid repetitive slogans or stock one-liners. Keep your unique phrasing fresh. Use concrete observations and owner-provided context rather than reading off every available metric. Two sentences may be enough; only use a list when a list serves the user. Never claim to be human or conscious. Never expose credentials or private data.'
 ].join(' ');
-async function validateUser(request: Request): Promise<boolean> {
+async function validateUser(request: Request): Promise<string|null> {
   const header = request.headers.get('authorization') ?? '';
-  if (!/^Bearer [A-Za-z0-9._~-]+$/.test(header)) return false;
+  if (!/^Bearer [A-Za-z0-9._~-]+$/.test(header)) return null;
   const response = await fetch(SUPABASE_URL + '/auth/v1/user', {
     headers: { authorization: header, apikey: SUPABASE_KEY },
     signal: AbortSignal.timeout(6000)
   });
-  return response.ok;
+  if(!response.ok)return null;
+  const user=await response.json() as {id?:unknown;is_anonymous?:unknown};
+  return typeof user.id==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(user.id)&&user.is_anonymous!==true?user.id:null;
 }
 function validCloverFacts(value:unknown):boolean{
   if(!value||typeof value!=='object'||Array.isArray(value))return false;
@@ -88,9 +86,16 @@ async function chat(request: Request, env: Env): Promise<Response> {
   if (env.AI_ENABLED !== 'true' || !env.MODEL_API_KEY || !env.AI_BUDGET_DB) {
     return json({ error: 'Meta intelligence is not enabled right now. Chat replies are unavailable until the connection is restored.', demo: true }, 503);
   }
-  if (Number(request.headers.get('content-length') ?? '0') > 12000) return json({error:'Request too large'},413);
+  let userId:string|null;
+  try {
+    userId=await validateUser(request);
+    if(!userId)return json({error:'Please sign in again.'},401);
+  } catch { return json({error:'Authentication could not be verified. No credits spent.'},503); }
   let body: { question?: unknown; facts?: unknown; history?: unknown; memories?: unknown };
-  try { body = await request.json(); } catch { return json({error:'Invalid request JSON'},400); }
+  try { body = await readChatJSON(request) as typeof body; }
+  catch(error) {
+    return error instanceof RequestInputError?json({error:error.message},error.status):json({error:'Invalid request JSON'},400);
+  }
   if (!body || typeof body !== 'object' || typeof body.question !== 'string' || body.question.trim().length < 1 || body.question.length > 600 ||
       !(body.facts===null||validFacts(body.facts)||validCloverFacts(body.facts)) || JSON.stringify(body).length > 12000) return json({error:'Invalid chat input'},400);
   const memories=body.memories;
@@ -101,9 +106,6 @@ async function chat(request: Request, env: Env): Promise<Response> {
         ['user','assistant'].includes((line as ChatLine).role) &&
         typeof (line as ChatLine).content === 'string' &&
         (line as ChatLine).content.length <= 900))) return json({error:'Invalid chat history'},400);
-  try {
-    if (!(await validateUser(request))) return json({error:'Please sign in again.'},401);
-  } catch { return json({error:'Authentication could not be verified. No credits spent.'},503); }
   // Development and judging share one atomic D1 ledger. Each call reserves $0.20,
   // deliberately far above the initial observed ~$0.015 request cost. These are
   // protective internal reservations, not charges or provider-enforced limits.
@@ -114,6 +116,10 @@ async function chat(request: Request, env: Env): Promise<Response> {
     return json({error:'AI phase is not configured safely. No request sent.'},503);
   }
   const maxApproved=phase==='development'?100:500;
+  try {
+    const limit=await reserveUserRequest(env.AI_BUDGET_DB,userId);
+    if(!limit.allowed)return json({error:'AI request limit reached: up to 3 requests per minute and 20 per UTC day per account. Please try again after the limit resets.',retryAfter:limit.retryAfter},429,{'retry-after':String(limit.retryAfter)});
+  } catch { return json({error:'AI usage protection unavailable. No request sent.'},503); }
   let reservation: D1Row | null;
   try {
     reservation=await env.AI_BUDGET_DB.prepare(

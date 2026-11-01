@@ -23,3 +23,12 @@ VALUES (1, 10000, 0);
 --     updated_at = CURRENT_TIMESTAMP
 -- WHERE id = 1 AND remaining_cents >= 20
 -- RETURNING remaining_cents;
+
+-- Durable per-verified-user counters. The Worker also initializes this idempotently.
+CREATE TABLE IF NOT EXISTS ai_user_limits (
+  user_id TEXT PRIMARY KEY,
+  minute_bucket INTEGER NOT NULL,
+  minute_count INTEGER NOT NULL,
+  day_bucket INTEGER NOT NULL,
+  day_count INTEGER NOT NULL
+);
