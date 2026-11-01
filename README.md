@@ -46,6 +46,13 @@ The architecture is designed to grow into additional industry-specific modules w
 - Dated management notes that provide context for before-and-after sales comparisons. A timing relationship is meaningful to investigate but does **not prove causation**.
 - Inventory CSV analysis of supplied products, unit costs, prices, on-hand stock and sales velocity. Inventory is browser-local, not yet cloud-synced; Soren never supplies a fictional product catalog.
 
+### Compare explicit business scenarios
+
+- Decision Lab models future reporting days using up to 30 recorded complete sales days and a user-entered revenue change.
+- Compare up to three named scenarios side by side, including each horizon, margin assumption, baseline revenue, modeled revenue difference and gross profit before operating expenses.
+- Export a comparison CSV with the source, baseline dates, reporting gaps, assumptions and limitations. Comparisons are temporary on-screen snapshots, cleared when leaving or rerendering the page; export before navigating away.
+- Unknown margins stay unknown. These are arithmetic what-if scenarios, not statistically validated forecasts or causal claims.
+
 ### Talk to a business partner with a personality
 
 - Meta Muse Spark-powered chat when enabled and authenticated, grounded in supplied business records and relevant saved notes.
