@@ -107,6 +107,8 @@
 /* Soren's native conversation channel */
 #soren-core{cursor:pointer}#soren-core:focus-visible{outline:2px solid #a4d7ff;outline-offset:7px;border-radius:50%}
 .soren-conversation-backdrop{position:fixed;z-index:10000;inset:0;display:flex;align-items:stretch;justify-content:flex-end;background:#010611c4;backdrop-filter:blur(9px)}
+/* On larger screens Soren is a companion panel: keep the workspace readable and interactive. */
+@media(min-width:601px){.soren-conversation-backdrop{background:transparent;backdrop-filter:none;pointer-events:none}.soren-conversation{pointer-events:auto;max-width:calc(100vw - 88px);box-shadow:-18px 0 65px #050c2c77}}
 .soren-conversation{width:min(100%,550px);height:100%;display:flex;flex-direction:column;box-sizing:border-box;background:radial-gradient(circle at 50% 0,#39366e67,transparent 40%),linear-gradient(160deg,#142143,#070e24);border-left:1px solid #89a7ec83;box-shadow:-30px 0 120px #050c2cba;color:#f1f5ff}
 .soren-conversation-head{display:flex;align-items:center;gap:13px;padding:28px 24px 22px;border-bottom:1px solid #6c86bd52}
 .soren-conversation-head img{width:76px;height:76px;object-fit:contain;filter:drop-shadow(0 0 19px #668dffbb)}
