@@ -634,3 +634,13 @@ img,svg{max-width:100%}
 .scenario-table th:first-child{min-width:130px}
 .scenario-table td{white-space:nowrap}
 .scenario-table button{margin-top:8px}
+
+
+/* Explicit session entry on the welcome screen. */
+.auth-card [hidden]{display:none!important}
+.session-choice{margin:14px 0 6px}
+.session-choice-note{font-size:12px;line-height:1.6;color:#b9c9e7;text-align:center}
+.session-choice .auth-primary{margin-top:14px}
+.session-switch{display:block;width:100%;padding:13px;margin-top:9px;border:1px solid #8f8ac35f;border-radius:7px;background:transparent;color:#c9baff;font-size:11px;font-weight:800;letter-spacing:.08em;cursor:pointer}
+.session-switch:hover,.session-switch:focus-visible{border-color:#c3acff;color:#fff}
+.session-switch:disabled{opacity:.6;cursor:wait}
