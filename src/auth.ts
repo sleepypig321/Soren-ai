@@ -12,6 +12,7 @@ type Business = { id: string; name: string };
 let businesses: Business[] = [];
 export const getActiveBusinessId = () => currentBusinessId;
 export const getActiveUserId = () => currentUser?.id ?? null;
+export const isWorkspaceEntered = () => Boolean(currentUser && enteredWorkspace);
 export const getActiveBusinessName = () => businesses.find(b => b.id === currentBusinessId)?.name ?? 'Personal workspace';
 let dashboard: (() => void) | null = null;
 let enteredWorkspace = false;
