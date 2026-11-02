@@ -3,7 +3,7 @@ import { compareReportingWeeks } from './reporting-weeks';
 import { normalizeColumns, type FieldSpec } from './column-map';
 import { canSyncImports, loadCloudImport, saveCloudImport, removeCloudImport } from './import-sync';
 import { openSorenConversation, attachSorenLauncher } from './conversation';
-import { initAuth, addAccountToolbar, getActiveBusinessId, getActiveUserId } from './auth';
+import { initAuth, addAccountToolbar, getActiveBusinessId, getActiveUserId, isWorkspaceEntered } from './auth';
 import { investigateRetail } from './investigations';
 import { renderInventory } from './inventory';
 import { renderCloverImport } from './clover-import';
@@ -150,6 +150,8 @@ const getPage = (): Page => location.hash === '#signals' ? 'signals' : location.
 let activePage: Page = getPage();
 let selectedInsight = 'revenue';
 function render(){
+  // Navigation and data-change events must never bypass the authenticated entry gate.
+  if (!isWorkspaceEntered()) return;
   restoreFinancialImport();
   restoreCloverImport();
   const s=summarize(sales);
