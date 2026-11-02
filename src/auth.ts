@@ -79,6 +79,24 @@ function authScreen(message = '') {
       if (error) { switchButton.disabled = false; root.querySelector<HTMLElement>('#auth-feedback')!.textContent = error.message; }
     });
   }
+  // GET STARTED always offers a fresh sign-in, even when this browser remembers a session.
+  root.querySelector<HTMLAnchorElement>('.landing-header-link')!.addEventListener('click', async event => {
+    event.preventDefault();
+    const start = event.currentTarget as HTMLAnchorElement;
+    start.setAttribute('aria-busy', 'true');
+    if (currentUser) {
+      const { error } = await supabase.auth.signOut({ scope: 'local' });
+      if (error) {
+        const feedback = root.querySelector<HTMLElement>('#auth-feedback');
+        if (feedback) feedback.textContent = 'Could not clear this session: ' + error.message;
+        start.removeAttribute('aria-busy');
+        return;
+      }
+    }
+    // signOut replaces the landing markup via SIGNED_OUT; target the current form.
+    root.querySelector<HTMLInputElement>('#auth-email')?.focus();
+    root.querySelector('#auth-access')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
   let mode: 'login' | 'signup' = 'login';
   const feedback = root.querySelector<HTMLElement>('#auth-feedback')!;
   const submit = root.querySelector<HTMLButtonElement>('#email-submit')!;
