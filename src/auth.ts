@@ -14,6 +14,8 @@ export const getActiveBusinessId = () => currentBusinessId;
 export const getActiveUserId = () => currentUser?.id ?? null;
 export const getActiveBusinessName = () => businesses.find(b => b.id === currentBusinessId)?.name ?? 'Personal workspace';
 let dashboard: (() => void) | null = null;
+let enteredWorkspace = false;
+let authenticationRequested = false;
 let root: HTMLDivElement;
 const escapeText = (s: string) => s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 
@@ -54,6 +56,28 @@ function authScreen(message = '') {
     </div>
     <div class="landing-orbit-footer"><span>SOREN AI / RETAIL COMMAND CENTER</span><span>PRIVATE WORKSPACES · EVIDENCE-FIRST THINKING</span></div>
   </main>`;
+  if (currentUser && !enteredWorkspace) {
+    root.querySelector<HTMLElement>('.auth-tabs')!.hidden = true;
+    root.querySelector<HTMLElement>('#auth-form')!.hidden = true;
+    root.querySelector<HTMLElement>('.auth-separator')!.hidden = true;
+    root.querySelector<HTMLButtonElement>('#google-login')!.hidden = true;
+    const choice = document.createElement('div');
+    choice.className = 'session-choice';
+    choice.innerHTML = '<p class="session-choice-note">You have an existing secure session. Choose when to enter your workspace.</p>'+
+      '<button class="auth-primary" id="continue-session" type="button">CONTINUE TO SOREN ↗</button>'+
+      '<button class="session-switch" id="switch-account" type="button">USE A DIFFERENT ACCOUNT</button>';
+    root.querySelector('.auth-intro')!.insertAdjacentElement('afterend', choice);
+    choice.querySelector('#continue-session')!.addEventListener('click', () => {
+      enteredWorkspace = true;
+      void showAuthenticated();
+    });
+    choice.querySelector('#switch-account')!.addEventListener('click', async () => {
+      const switchButton = choice.querySelector<HTMLButtonElement>('#switch-account')!;
+      switchButton.disabled = true;
+      const { error } = await supabase.auth.signOut();
+      if (error) { switchButton.disabled = false; root.querySelector<HTMLElement>('#auth-feedback')!.textContent = error.message; }
+    });
+  }
   let mode: 'login' | 'signup' = 'login';
   const feedback = root.querySelector<HTMLElement>('#auth-feedback')!;
   const submit = root.querySelector<HTMLButtonElement>('#email-submit')!;
@@ -72,22 +96,25 @@ function authScreen(message = '') {
     const email = root.querySelector<HTMLInputElement>('#auth-email')!.value.trim();
     const password = root.querySelector<HTMLInputElement>('#auth-password')!.value;
     submit.disabled = true;
+    authenticationRequested = true;
     feedback.textContent = 'Securing your session…';
     try {
       const result = mode === 'login'
         ? await supabase.auth.signInWithPassword({ email, password })
         : await supabase.auth.signUp({ email, password, options: { emailRedirectTo: location.origin } });
       if (result.error) throw result.error;
-      if (mode === 'signup' && !result.data.session) feedback.textContent = 'Check your email to confirm your account, then sign in.';
+      if (mode === 'signup' && !result.data.session) { authenticationRequested = false; feedback.textContent = 'Check your email to confirm your account, then sign in.'; }
       else feedback.textContent = 'Welcome to Soren.';
     } catch (error) {
+      authenticationRequested = false;
       feedback.textContent = error instanceof Error ? error.message : 'Sign-in failed. Please retry.';
     } finally { submit.disabled = false; }
   });
   root.querySelector('#google-login')!.addEventListener('click', async () => {
+    authenticationRequested = true;
     feedback.textContent = 'Opening Google sign-in…';
     const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.origin } });
-    if (error) feedback.textContent = error.message;
+    if (error) { authenticationRequested = false; feedback.textContent = error.message; }
   });
 }
 
@@ -191,10 +218,17 @@ export function initAuth(element: HTMLDivElement, renderDashboard: () => void) {
   root = element;
   dashboard = renderDashboard;
   root.innerHTML = '<div class="auth-loading">SOREN / VERIFYING ACCESS…</div>';
-  supabase.auth.onAuthStateChange((_event, session) => {
+  supabase.auth.onAuthStateChange((event, session) => {
     currentUser = session?.user ?? null;
+    if (!currentUser) {
+      enteredWorkspace = false;
+      authenticationRequested = false;
+    } else if (event === 'SIGNED_IN' && authenticationRequested) {
+      enteredWorkspace = true;
+      authenticationRequested = false;
+    }
     window.dispatchEvent(new Event('soren:auth-changed'));
-    if (currentUser) void showAuthenticated();
+    if (currentUser && enteredWorkspace) void showAuthenticated();
     else authScreen();
   });
 }
